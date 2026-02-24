@@ -13,8 +13,8 @@ import { store } from '@/routes/register';
 
 <template>
     <AuthBase
-        title="Create an account"
-        description="Enter your details below to create your account"
+        title="Create your account"
+        description="Set up your attendance management account"
     >
         <Head title="Register" />
 
@@ -100,7 +100,7 @@ import { store } from '@/routes/register';
                     :href="login()"
                     class="underline underline-offset-4"
                     :tabindex="6"
-                    >Log in</TextLink
+                    >Sign in</TextLink
                 >
             </div>
         </Form>

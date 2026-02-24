@@ -21,8 +21,8 @@ defineProps<{
 
 <template>
     <AuthBase
-        title="Log in to your account"
-        description="Enter your email and password below to log in"
+        title="Welcome back"
+        description="Sign in to your attendance management account"
     >
         <Head title="Log in" />
 
@@ -94,7 +94,7 @@ defineProps<{
                     data-test="login-button"
                 >
                     <Spinner v-if="processing" />
-                    Log in
+                    Sign in
                 </Button>
             </div>
 
@@ -103,7 +103,7 @@ defineProps<{
                 v-if="canRegister"
             >
                 Don't have an account?
-                <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+                <TextLink :href="register()" :tabindex="5">Create one</TextLink>
             </div>
         </Form>
     </AuthBase>

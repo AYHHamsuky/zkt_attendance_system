@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { Link } from '@inertiajs/vue3';
+import { Fingerprint, Clock, Users, ShieldCheck } from 'lucide-vue-next';
 import { home } from '@/routes';
-
-const page = usePage();
-const name = page.props.name;
 
 defineProps<{
     title?: string;
@@ -24,9 +21,30 @@ defineProps<{
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"
             >
-                <AppLogoIcon class="mr-2 size-8 fill-current text-white" />
-                {{ name }}
+                <div class="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                    <Fingerprint class="h-5 w-5 text-primary-foreground" />
+                </div>
+                ZKTeco Attendance
             </Link>
+            <div class="relative z-20 mt-auto">
+                <div class="mb-8 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <Clock class="h-5 w-5 text-primary" />
+                        <span class="text-sm text-zinc-300">Real-time attendance tracking</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <Users class="h-5 w-5 text-primary" />
+                        <span class="text-sm text-zinc-300">Employee & device management</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <ShieldCheck class="h-5 w-5 text-primary" />
+                        <span class="text-sm text-zinc-300">Secure biometric integration</span>
+                    </div>
+                </div>
+                <blockquote class="space-y-2">
+                    <p class="text-lg">&ldquo;Streamline your workforce attendance with biometric precision.&rdquo;</p>
+                </blockquote>
+            </div>
         </div>
         <div class="lg:p-8">
             <div

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { Fingerprint } from 'lucide-vue-next';
 import { home } from '@/routes';
 
 defineProps<{
@@ -21,13 +21,11 @@ defineProps<{
                         class="flex flex-col items-center gap-2 font-medium"
                     >
                         <div
-                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
+                            class="mb-1 flex h-10 w-10 items-center justify-center rounded-lg bg-primary"
                         >
-                            <AppLogoIcon
-                                class="size-9 fill-current text-[var(--foreground)] dark:text-white"
-                            />
+                            <Fingerprint class="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <span class="sr-only">{{ title }}</span>
+                        <span class="text-base font-semibold">ZKTeco Attendance</span>
                     </Link>
                     <div class="space-y-2 text-center">
                         <h1 class="text-xl font-medium">{{ title }}</h1>
