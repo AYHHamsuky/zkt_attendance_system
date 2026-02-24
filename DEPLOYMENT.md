@@ -32,7 +32,7 @@
    scp zkt-attendance.tar.gz user@192.168.1.100:/tmp/
    ```
 
-2. **SSH into the server** and extract:
+2. **SSH into the server** and extract:ay
    ```bash
    ssh user@192.168.1.100
 
