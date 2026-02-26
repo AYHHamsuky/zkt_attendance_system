@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, UserCheck, UserX, Clock, BarChart3, Filter, X, Download, Search } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
@@ -124,8 +125,14 @@ function exportReport() {
     const params = new URLSearchParams();
     params.set('date_from', dateFrom.value);
     params.set('date_to', dateTo.value);
+    params.set('group_by', groupBy.value);
     if (department.value) params.set('department', department.value);
     if (unit.value) params.set('unit', unit.value);
+    if (deviceId.value) params.set('device_id', deviceId.value);
+    if (search.value) params.set('search', search.value);
+    if (attendanceStatus.value !== 'present') params.set('attendance_status', attendanceStatus.value);
+    if (tardyFilter.value) params.set('tardy_filter', tardyFilter.value);
+    
     window.location.href = '/attendance/export?' + params.toString();
 }
 
@@ -212,35 +219,29 @@ const hasActiveFilters = computed(() =>
                 </Card>
             </div>
 
-            <!-- Filters -->
-            <Card>
-                <CardContent class="pt-5">
-                    <!-- Primary Row: Date range + Group By + Actions -->
-                    <div class="flex flex-wrap items-end gap-3">
-                        <div class="space-y-1.5">
-                            <Label for="date_from">From</Label>
-                            <Input id="date_from" v-model="dateFrom" type="date" class="w-[150px]" />
-                        </div>
-                        <div class="space-y-1.5">
-                            <Label for="date_to">To</Label>
-                            <Input id="date_to" v-model="dateTo" type="date" class="w-[150px]" />
-                        </div>
-                        <div class="space-y-1.5">
-                            <Label>Group By</Label>
-                            <Select v-model="groupBy">
-                                <SelectTrigger class="w-[150px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="individual">Individual</SelectItem>
-                                    <SelectItem value="department">Department</SelectItem>
-                                    <SelectItem value="unit">Unit</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div v-if="groupBy === 'individual'" class="space-y-1.5">
-                            <Label>Search Employee</Label>
-                            <div class="relative">
+            <Tabs v-model="groupBy" @update:model-value="applyFilters" class="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="individual">Individual</TabsTrigger>
+                    <TabsTrigger value="department">Departments</TabsTrigger>
+                    <TabsTrigger value="unit">Units</TabsTrigger>
+                </TabsList>
+
+                <!-- Filters -->
+                <Card>
+                    <CardContent class="pt-5">
+                        <!-- Primary Row: Date range + Actions -->
+                        <div class="flex flex-wrap items-end gap-3">
+                            <div class="space-y-1.5">
+                                <Label for="date_from">From</Label>
+                                <Input id="date_from" v-model="dateFrom" type="date" class="w-[150px]" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label for="date_to">To</Label>
+                                <Input id="date_to" v-model="dateTo" type="date" class="w-[150px]" />
+                            </div>
+                            <div v-if="groupBy === 'individual'" class="space-y-1.5">
+                                <Label>Search Employee</Label>
+                                <div class="relative">
                                 <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                                 <Input v-model="search" placeholder="Name or ID..." class="w-[180px] pl-8" @keyup.enter="applyFilters" />
                             </div>
@@ -494,6 +495,7 @@ const hasActiveFilters = computed(() =>
                     </Table>
                 </CardContent>
             </Card>
+            </Tabs>
         </div>
     </AppLayout>
 </template>

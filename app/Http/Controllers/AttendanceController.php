@@ -70,9 +70,9 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Display attendance report with aggregated data.
+     * Fetch and process report data based on filters.
      */
-    public function report(Request $request): Response
+    private function getReportData(Request $request): array
     {
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo = $request->input('date_to', Carbon::now()->toDateString());
@@ -101,7 +101,13 @@ class AttendanceController extends Controller
             }])
             ->withCount(['attendanceLogs as check_outs' => function ($q) use ($dateFrom, $dateToEod) {
                 $q->where('state', 1)->whereBetween('timestamp', [$dateFrom, $dateToEod]);
-            }]);
+            }])
+            ->withMin(['attendanceLogs as first_check_in' => function ($q) use ($dateFrom, $dateToEod) {
+                $q->where('state', 0)->whereBetween('timestamp', [$dateFrom, $dateToEod]);
+            }], 'timestamp')
+            ->withMax(['attendanceLogs as last_check_out' => function ($q) use ($dateFrom, $dateToEod) {
+                $q->where('state', 1)->whereBetween('timestamp', [$dateFrom, $dateToEod]);
+            }], 'timestamp');
 
         if ($filterDepartment) {
             $employeeQuery->where('department', $filterDepartment);
@@ -167,11 +173,35 @@ class AttendanceController extends Controller
                 'device' => $e->device ? ['id' => $e->device->id, 'name' => $e->device->name] : null,
                 'check_ins' => $e->check_ins,
                 'check_outs' => $e->check_outs,
+                'first_check_in' => $e->first_check_in ? Carbon::parse($e->first_check_in)->format('Y-m-d H:i:s') : null,
+                'last_check_out' => $e->last_check_out ? Carbon::parse($e->last_check_out)->format('Y-m-d H:i:s') : null,
                 'total_logs' => $e->total_logs,
                 'tardy_count' => $e->tardy_count,
                 'early_out_count' => $e->early_out_count,
             ])->values(),
         };
+
+        return [
+            'reportData' => $reportData,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'groupBy' => $groupBy,
+            'filterDepartment' => $filterDepartment,
+            'filterUnit' => $filterUnit,
+            'filterDeviceId' => $filterDeviceId,
+            'search' => $search,
+            'attendanceStatus' => $attendanceStatus,
+            'tardyFilter' => $tardyFilter,
+            'allShifts' => $allShifts,
+        ];
+    }
+
+    /**
+     * Display attendance report with aggregated data.
+     */
+    public function report(Request $request): Response
+    {
+        $data = $this->getReportData($request);
 
         // Summary statistics — scoped to Head Office employees
         $hoEmployeeIds = Employee::where('is_active', true)
@@ -183,7 +213,7 @@ class AttendanceController extends Controller
             ->whereIn('employee_id', $hoEmployeeIds)
             ->distinct('employee_id')
             ->count('employee_id');
-        $todayTardy = $this->computeTodayTardyCount($allShifts);
+        $todayTardy = $this->computeTodayTardyCount($data['allShifts']);
 
         // Filter options for dropdowns
         $departments = Employee::whereNotNull('department')->where('is_active', true)
@@ -193,7 +223,7 @@ class AttendanceController extends Controller
         $devices = Device::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Attendance/Report', [
-            'reportData' => $reportData,
+            'reportData' => $data['reportData'],
             'summary' => [
                 'total_employees' => $totalEmployees,
                 'today_present' => $todayPresent,
@@ -201,15 +231,15 @@ class AttendanceController extends Controller
                 'today_tardy' => $todayTardy,
             ],
             'filters' => [
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-                'group_by' => $groupBy,
-                'department' => $filterDepartment,
-                'unit' => $filterUnit,
-                'device_id' => $filterDeviceId ? (int) $filterDeviceId : null,
-                'search' => $search,
-                'attendance_status' => $attendanceStatus,
-                'tardy_filter' => $tardyFilter,
+                'date_from' => $data['dateFrom'],
+                'date_to' => $data['dateTo'],
+                'group_by' => $data['groupBy'],
+                'department' => $data['filterDepartment'],
+                'unit' => $data['filterUnit'],
+                'device_id' => $data['filterDeviceId'] ? (int) $data['filterDeviceId'] : null,
+                'search' => $data['search'],
+                'attendance_status' => $data['attendanceStatus'],
+                'tardy_filter' => $data['tardyFilter'],
             ],
             'filterOptions' => [
                 'departments' => $departments,
@@ -224,59 +254,72 @@ class AttendanceController extends Controller
      */
     public function export(Request $request): StreamedResponse
     {
-        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
-        $dateTo = $request->input('date_to', Carbon::now()->toDateString());
-        $filterDepartment = $request->input('department');
-        $filterUnit = $request->input('unit');
-        $dateToEod = Carbon::parse($dateTo)->endOfDay();
+        $data = $this->getReportData($request);
+        $reportData = $data['reportData'];
+        $groupBy = $data['groupBy'];
+        $dateFrom = $data['dateFrom'];
+        $dateTo = $data['dateTo'];
 
-        $employeeQuery = Employee::where('is_active', true)
-            ->where('location', 'Head Office')
-            ->withCount(['attendanceLogs as check_ins' => function ($q) use ($dateFrom, $dateToEod) {
-                $q->where('state', 0)->whereBetween('timestamp', [$dateFrom, $dateToEod]);
-            }])
-            ->withCount(['attendanceLogs as check_outs' => function ($q) use ($dateFrom, $dateToEod) {
-                $q->where('state', 1)->whereBetween('timestamp', [$dateFrom, $dateToEod]);
-            }])
-            ->orderBy('name');
+        $filename = "attendance-{$groupBy}-{$dateFrom}-to-{$dateTo}.csv";
 
-        if ($filterDepartment) {
-            $employeeQuery->where('department', $filterDepartment);
-        }
-
-        if ($filterUnit) {
-            $employeeQuery->where('unit', $filterUnit);
-        }
-
-        $employees = $employeeQuery->get();
-
-        $filename = "attendance-{$dateFrom}-to-{$dateTo}.csv";
-
-        return response()->streamDownload(function () use ($employees, $dateFrom, $dateTo) {
+        return response()->streamDownload(function () use ($reportData, $groupBy, $dateFrom, $dateTo) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, [
-                'Name',
-                'Payroll ID',
-                'Department',
-                'Unit',
-                'Position',
-                'Check Ins',
-                'Check Outs',
-                'Period',
-            ]);
-
-            foreach ($employees as $employee) {
+            if ($groupBy === 'individual') {
                 fputcsv($handle, [
-                    $employee->name,
-                    $employee->user_id,
-                    $employee->department ?? '',
-                    $employee->unit ?? '',
-                    $employee->position ?? '',
-                    $employee->check_ins,
-                    $employee->check_outs,
-                    "{$dateFrom} to {$dateTo}",
+                    'Name',
+                    'Payroll ID',
+                    'Department',
+                    'Unit',
+                    'Position',
+                    'First Check In',
+                    'Last Check Out',
+                    'Check Ins',
+                    'Check Outs',
+                    'Late In',
+                    'Early Out',
+                    'Period',
                 ]);
+
+                foreach ($reportData as $row) {
+                    fputcsv($handle, [
+                        $row['name'],
+                        $row['user_id'],
+                        $row['department'] ?? '',
+                        $row['unit'] ?? '',
+                        $row['position'] ?? '',
+                        $row['first_check_in'] ?? '-',
+                        $row['last_check_out'] ?? '-',
+                        $row['check_ins'],
+                        $row['check_outs'],
+                        $row['tardy_count'],
+                        $row['early_out_count'],
+                        "{$dateFrom} to {$dateTo}",
+                    ]);
+                }
+            } else {
+                // Grouped export
+                fputcsv($handle, [
+                    ucfirst($groupBy),
+                    'Total Employees',
+                    'Check Ins',
+                    'Check Outs',
+                    'Late In',
+                    'Total Logs',
+                    'Period',
+                ]);
+
+                foreach ($reportData as $row) {
+                    fputcsv($handle, [
+                        $row['group'],
+                        $row['total_employees'],
+                        $row['check_ins'],
+                        $row['check_outs'],
+                        $row['tardy_count'],
+                        $row['total_logs'],
+                        "{$dateFrom} to {$dateTo}",
+                    ]);
+                }
             }
 
             fclose($handle);
