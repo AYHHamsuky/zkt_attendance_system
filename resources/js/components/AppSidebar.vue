@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Server, Users, ClipboardList, BarChart3 } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, LayoutGrid, Server, Users, ClipboardList, BarChart3 } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -17,7 +18,10 @@ import { type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
 import { dashboard } from '@/routes';
 
-const mainNavItems: NavItem[] = [
+const page = usePage<{ auth: { user: { role: string } | null } }>();
+const isAdmin = computed(() => page.props.auth?.user?.role === 'admin');
+
+const allNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -27,6 +31,7 @@ const mainNavItems: NavItem[] = [
         title: 'Devices',
         href: '/devices',
         icon: Server,
+        adminOnly: true,
     },
     {
         title: 'Employees',
@@ -45,12 +50,11 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
+const mainNavItems = computed(() =>
+    allNavItems.filter((item) => !(item as any).adminOnly || isAdmin.value)
+);
+
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
     {
         title: 'Documentation',
         href: 'https://laravel.com/docs/starter-kits#vue',

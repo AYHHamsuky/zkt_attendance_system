@@ -15,6 +15,7 @@ class Device extends Model
         'ip_address',
         'port',
         'connection_type',
+        'purpose',
         'serial_number',
         'device_name',
         'platform',

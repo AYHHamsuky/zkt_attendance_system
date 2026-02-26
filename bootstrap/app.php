@@ -33,6 +33,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global debug logger - logs ALL incoming requests
         $middleware->prepend(\App\Http\Middleware\LogAllRequests::class);
 
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminOnly::class,
+        ]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,

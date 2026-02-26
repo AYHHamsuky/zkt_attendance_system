@@ -22,7 +22,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Search, Trash2, Eye, UserX, Users } from 'lucide-vue-next';
+import { Plus, Search, Trash2, Eye, UserX, RefreshCw } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { debounce } from '@/lib/debounce';
 
@@ -59,6 +59,7 @@ const props = defineProps<{
         search?: string;
         department?: string;
         status?: string;
+        fingerprint?: string;
     };
 }>();
 
@@ -70,6 +71,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 const search = ref(props.filters.search ?? '');
 const department = ref(props.filters.department ?? '');
 const status = ref(props.filters.status ?? '');
+const fingerprint = ref(props.filters.fingerprint ?? '');
+const syncing = ref(false);
 
 const deleteDialogOpen = ref(false);
 const employeeToDelete = ref<Employee | null>(null);
@@ -79,6 +82,7 @@ const applyFilters = debounce(() => {
         search: search.value || undefined,
         department: department.value || undefined,
         status: status.value || undefined,
+        fingerprint: fingerprint.value || undefined,
     }, {
         preserveState: true,
         replace: true,
@@ -97,6 +101,19 @@ function onStatusChange(val: any) {
     const v = String(val ?? '');
     status.value = v === 'all' ? '' : v;
     applyFilters();
+}
+
+function onFingerprintChange(val: any) {
+    const v = String(val ?? '');
+    fingerprint.value = v === 'all' ? '' : v;
+    applyFilters();
+}
+
+function syncFromDevices() {
+    syncing.value = true;
+    router.post('/devices/sync-all-users', {}, {
+        onFinish: () => { syncing.value = false; },
+    });
 }
 
 function confirmDelete(employee: Employee) {
@@ -126,12 +143,18 @@ function deleteEmployee() {
                     <h2 class="text-2xl font-bold tracking-tight">Employees</h2>
                     <p class="text-muted-foreground">{{ employees.total }} employees found</p>
                 </div>
-                <Button as-child>
-                    <Link href="/employees/create">
-                        <Plus class="mr-2 size-4" />
-                        Add Employee
-                    </Link>
-                </Button>
+                <div class="flex gap-2">
+                    <Button variant="outline" :disabled="syncing" @click="syncFromDevices">
+                        <RefreshCw class="mr-2 size-4" :class="{ 'animate-spin': syncing }" />
+                        Sync from Devices
+                    </Button>
+                    <Button as-child>
+                        <Link href="/employees/create">
+                            <Plus class="mr-2 size-4" />
+                            Add Employee
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <!-- Filters -->
@@ -163,6 +186,16 @@ function deleteEmployee() {
                         <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select :model-value="fingerprint || 'all'" @update:model-value="onFingerprintChange">
+                    <SelectTrigger class="w-[170px]">
+                        <SelectValue placeholder="Fingerprint" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Fingerprints</SelectItem>
+                        <SelectItem value="enrolled">Enrolled</SelectItem>
+                        <SelectItem value="not_enrolled">Not Enrolled</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -201,8 +234,8 @@ function deleteEmployee() {
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge :variant="emp.has_fingerprint ? 'default' : 'outline'">
-                                        {{ emp.has_fingerprint ? 'Yes' : 'No' }}
+                                    <Badge :variant="emp.has_fingerprint ? 'default' : 'secondary'">
+                                        {{ emp.has_fingerprint ? '✓ Enrolled' : 'Not Enrolled' }}
                                     </Badge>
                                 </TableCell>
                                 <TableCell class="text-right">

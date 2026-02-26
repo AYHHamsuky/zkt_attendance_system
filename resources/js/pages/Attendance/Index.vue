@@ -14,24 +14,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Search, ClipboardList, Download } from 'lucide-vue-next';
+import { Search, ClipboardList, BarChart2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { debounce } from '@/lib/debounce';
 
-interface AttendanceLog {
-    id: number;
-    uid: string;
-    timestamp: string;
-    state: number;
-    type: number;
-    state_label: string;
-    type_label: string;
-    employee: { id: number; name: string; user_id: string } | null;
-    device: { id: number; name: string } | null;
+interface Session {
+    employee_id: number;
+    employee_name: string;
+    employee_user_id: string;
+    employee_department: string | null;
+    log_date: string;
+    clock_in: string | null;
+    clock_out: string | null;
 }
 
-interface PaginatedData {
-    data: AttendanceLog[];
+interface PaginatedSessions {
+    data: Session[];
     current_page: number;
     last_page: number;
     per_page: number;
@@ -40,13 +38,14 @@ interface PaginatedData {
 }
 
 const props = defineProps<{
-    logs: PaginatedData;
+    sessions: PaginatedSessions;
     filters: {
         search?: string;
         date_from?: string;
         date_to?: string;
-        state?: string;
+        department?: string;
     };
+    departments: string[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -54,64 +53,71 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Attendance' },
 ];
 
-const search = ref(props.filters.search ?? '');
-const dateFrom = ref(props.filters.date_from ?? '');
-const dateTo = ref(props.filters.date_to ?? '');
-const state = ref(props.filters.state ?? '');
+const today = new Date().toISOString().split('T')[0];
+const search     = ref(props.filters.search ?? '');
+const dateFrom   = ref(props.filters.date_from ?? today);
+const dateTo     = ref(props.filters.date_to ?? today);
+const department = ref(props.filters.department ?? '');
 
 const applyFilters = debounce(() => {
     router.get('/attendance', {
-        search: search.value || undefined,
-        date_from: dateFrom.value || undefined,
-        date_to: dateTo.value || undefined,
-        state: state.value || undefined,
-    }, {
-        preserveState: true,
-        replace: true,
-    });
+        search:     search.value || undefined,
+        date_from:  dateFrom.value || undefined,
+        date_to:    dateTo.value || undefined,
+        department: department.value || undefined,
+    }, { preserveState: true, replace: true });
 }, 300);
 
 watch([search], () => applyFilters());
 
-function onDateChange() {
+function onDateChange() { applyFilters(); }
+
+function onDepartmentChange(val: string) {
+    department.value = val === 'all' ? '' : val;
     applyFilters();
 }
 
-function onStateChange(val: any) {
-    const v = String(val ?? '');
-    state.value = v === 'all' ? '' : v;
-    applyFilters();
+function formatTime(dt: string | null): string {
+    if (!dt) return '—';
+    return new Date(dt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function stateBadgeVariant(s: number): 'default' | 'secondary' | 'destructive' | 'outline' {
-    switch (s) {
-        case 0: return 'default';
-        case 1: return 'secondary';
-        case 2: return 'destructive';
-        case 3: return 'outline';
-        default: return 'outline';
-    }
+function formatDate(d: string): string {
+    return new Date(d + 'T00:00:00').toLocaleDateString([], {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+    });
 }
 
-function formatTime(timestamp: string): string {
-    return new Date(timestamp).toLocaleString();
+function duration(clockIn: string | null, clockOut: string | null): string {
+    if (!clockIn || !clockOut) return '—';
+    const mins = Math.round((new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 60000);
+    if (mins <= 0) return '—';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function sessionStatus(s: Session): 'in' | 'out' | 'partial' {
+    if (s.clock_in && s.clock_out) return 'out';
+    if (s.clock_in) return 'in';
+    return 'partial';
 }
 </script>
 
 <template>
-    <Head title="Attendance Logs" />
+    <Head title="Attendance" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold tracking-tight">Attendance Logs</h2>
-                    <p class="text-muted-foreground">{{ logs.total }} records found</p>
+                    <h2 class="text-2xl font-bold tracking-tight">Attendance</h2>
+                    <p class="text-muted-foreground">{{ sessions.total }} sessions found</p>
                 </div>
                 <Button as-child variant="outline">
                     <Link href="/attendance/report">
-                        <Download class="mr-2 size-4" />
+                        <BarChart2 class="mr-2 size-4" />
                         View Report
                     </Link>
                 </Button>
@@ -123,34 +129,21 @@ function formatTime(timestamp: string): string {
                     <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
                         v-model="search"
-                        placeholder="Search by employee name..."
+                        placeholder="Search by name or payroll ID..."
                         class="pl-9"
                     />
                 </div>
-                <Input
-                    v-model="dateFrom"
-                    type="date"
-                    class="w-[160px]"
-                    @change="onDateChange"
-                />
-                <Input
-                    v-model="dateTo"
-                    type="date"
-                    class="w-[160px]"
-                    @change="onDateChange"
-                />
-                <Select :model-value="state || 'all'" @update:model-value="onStateChange">
-                    <SelectTrigger class="w-[160px]">
-                        <SelectValue placeholder="All States" />
+                <Input v-model="dateFrom" type="date" class="w-[160px]" @change="onDateChange" />
+                <Input v-model="dateTo"   type="date" class="w-[160px]" @change="onDateChange" />
+                <Select :model-value="department || 'all'" @update:model-value="onDepartmentChange">
+                    <SelectTrigger class="w-[180px]">
+                        <SelectValue placeholder="All Departments" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All States</SelectItem>
-                        <SelectItem value="0">Check In</SelectItem>
-                        <SelectItem value="1">Check Out</SelectItem>
-                        <SelectItem value="2">Break Out</SelectItem>
-                        <SelectItem value="3">Break In</SelectItem>
-                        <SelectItem value="4">OT In</SelectItem>
-                        <SelectItem value="5">OT Out</SelectItem>
+                        <SelectItem value="all">All Departments</SelectItem>
+                        <SelectItem v-for="dept in departments" :key="dept" :value="dept">
+                            {{ dept }}
+                        </SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -162,33 +155,39 @@ function formatTime(timestamp: string): string {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Employee</TableHead>
-                                <TableHead>Device</TableHead>
-                                <TableHead>Date &amp; Time</TableHead>
-                                <TableHead>State</TableHead>
-                                <TableHead>Method</TableHead>
+                                <TableHead>Department</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Time In</TableHead>
+                                <TableHead>Time Out</TableHead>
+                                <TableHead>Duration</TableHead>
+                                <TableHead>Status</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            <TableRow v-for="log in logs.data" :key="log.id">
+                            <TableRow v-for="(s, i) in sessions.data" :key="`${s.employee_id}-${s.log_date}-${i}`">
                                 <TableCell>
                                     <div>
-                                        <p class="font-medium">{{ log.employee?.name ?? `UID: ${log.uid}` }}</p>
-                                        <p v-if="log.employee" class="text-xs text-muted-foreground">{{ log.employee.user_id }}</p>
+                                        <p class="font-medium">{{ s.employee_name }}</p>
+                                        <p class="text-xs text-muted-foreground">{{ s.employee_user_id }}</p>
                                     </div>
                                 </TableCell>
-                                <TableCell>{{ log.device?.name ?? '—' }}</TableCell>
-                                <TableCell>{{ formatTime(log.timestamp) }}</TableCell>
+                                <TableCell class="text-sm">{{ s.employee_department ?? '—' }}</TableCell>
+                                <TableCell class="text-sm whitespace-nowrap">{{ formatDate(s.log_date) }}</TableCell>
+                                <TableCell class="font-mono text-sm">{{ formatTime(s.clock_in) }}</TableCell>
+                                <TableCell class="font-mono text-sm">{{ formatTime(s.clock_out) }}</TableCell>
+                                <TableCell class="text-sm">{{ duration(s.clock_in, s.clock_out) }}</TableCell>
                                 <TableCell>
-                                    <Badge :variant="stateBadgeVariant(log.state)">
-                                        {{ log.state_label }}
+                                    <Badge
+                                        :variant="sessionStatus(s) === 'out' ? 'default' : sessionStatus(s) === 'in' ? 'secondary' : 'outline'"
+                                    >
+                                        {{ sessionStatus(s) === 'out' ? 'Complete' : sessionStatus(s) === 'in' ? 'Clocked In' : 'No Clock-In' }}
                                     </Badge>
                                 </TableCell>
-                                <TableCell>{{ log.type_label }}</TableCell>
                             </TableRow>
-                            <TableRow v-if="logs.data.length === 0">
-                                <TableCell colspan="5" class="text-center text-muted-foreground py-8">
+                            <TableRow v-if="sessions.data.length === 0">
+                                <TableCell colspan="7" class="text-center text-muted-foreground py-8">
                                     <ClipboardList class="size-8 mx-auto mb-2 opacity-50" />
-                                    No attendance records found. Sync data from a device first.
+                                    No attendance sessions found for this period.
                                 </TableCell>
                             </TableRow>
                         </TableBody>
@@ -197,8 +196,8 @@ function formatTime(timestamp: string): string {
             </Card>
 
             <!-- Pagination -->
-            <div v-if="logs.last_page > 1" class="flex items-center justify-center gap-1">
-                <template v-for="link in logs.links" :key="link.label">
+            <div v-if="sessions.last_page > 1" class="flex items-center justify-center gap-1">
+                <template v-for="link in sessions.links" :key="link.label">
                     <Button
                         v-if="link.url"
                         size="sm"

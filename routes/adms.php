@@ -30,16 +30,23 @@ Route::get('/iclock/getrequest', [DevicePushController::class, 'getRequest']);
 // Device sends command execution results
 Route::post('/iclock/devicecmd', [DevicePushController::class, 'deviceCmd']);
 
+// Aliases for devices/proxies misconfigured with the full path in the server URL
+// (e.g. server set to "host/iclock/cdata" instead of just "host")
+Route::match(['get', 'post'], '/iclock/cdata/iclock/cdata', [DevicePushController::class, 'cdata']);
+Route::get('/iclock/cdata/iclock/getrequest', [DevicePushController::class, 'getRequest']);
+Route::post('/iclock/cdata/iclock/devicecmd', [DevicePushController::class, 'deviceCmd']);
+
 // Catch-all for ANY other /iclock/* path the device might try
 Route::any('/iclock/{path}', function (\Illuminate\Http\Request $request, $path = '') {
     \Illuminate\Support\Facades\Log::info('ADMS: Unknown path requested', [
         'method' => $request->method(),
         'url' => $request->fullUrl(),
-        'path' => '/iclock/' . $path,
+        'path' => '/iclock/'.$path,
         'ip' => $request->ip(),
         'headers' => $request->headers->all(),
         'body' => substr($request->getContent(), 0, 500),
         'query' => $request->query(),
     ]);
+
     return response('OK', 200);
 })->where('path', '.*');

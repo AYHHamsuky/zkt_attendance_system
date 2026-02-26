@@ -25,6 +25,7 @@ interface Device {
     ip_address: string;
     port: number;
     connection_type: 'lan' | 'adms';
+    purpose: 'enrollment' | 'attendance';
     serial_number: string | null;
     device_name: string | null;
     platform: string | null;
@@ -39,7 +40,7 @@ interface Device {
     updated_at: string;
 }
 
-const props = defineProps<{ device: Device }>();
+const props = defineProps<{ device: Device; adms_server: string; adms_port: number }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -53,6 +54,7 @@ const loading = ref<Record<string, boolean>>({});
 const form = useForm({
     name: props.device.name,
     connection_type: props.device.connection_type,
+    purpose: props.device.purpose,
     ip_address: props.device.ip_address,
     port: props.device.port,
     serial_number: props.device.serial_number ?? '',
@@ -148,6 +150,14 @@ function formatDate(date: string | null): string {
                                 <Input id="name" v-model="form.name" required />
                                 <InputError :message="form.errors.name" />
                             </div>
+                            <div class="space-y-2">
+                                <Label for="purpose">Device Purpose</Label>
+                                <select id="purpose" v-model="form.purpose" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                                    <option value="attendance">Attendance (Clock In / Out)</option>
+                                    <option value="enrollment">Enrollment Only (Fingerprint Capture)</option>
+                                </select>
+                                <InputError :message="form.errors.purpose" />
+                            </div>
                             <div v-if="device.connection_type === 'adms'" class="space-y-2">
                                 <Label for="serial_number">Serial Number</Label>
                                 <Input id="serial_number" v-model="form.serial_number" />
@@ -188,6 +198,17 @@ function formatDate(date: string | null): string {
                                     </span>
                                     <span v-else class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800 dark:bg-gray-800 dark:text-gray-200">
                                         <Wifi class="size-3" /> LAN
+                                    </span>
+                                </dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-muted-foreground">Purpose</dt>
+                                <dd class="font-medium">
+                                    <span v-if="device.purpose === 'enrollment'" class="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                        Enrollment Only
+                                    </span>
+                                    <span v-else class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        Attendance
                                     </span>
                                 </dd>
                             </div>
@@ -275,16 +296,20 @@ function formatDate(date: string | null): string {
                                 </p>
                                 <ul class="text-xs text-blue-700 dark:text-blue-300 space-y-1">
                                     <li>✓ Attendance is pushed in real-time</li>
-                                    <li>✓ New users are synced automatically</li>
+                                    <li>✓ New users are synced on enroll</li>
                                     <li>✓ Device status updates on each connection</li>
                                 </ul>
                             </div>
+                            <Button variant="outline" class="w-full justify-start" @click="syncUsers" :disabled="loading.syncUsers">
+                                <Users class="mr-2 size-4" :class="{ 'animate-spin': loading.syncUsers }" />
+                                {{ loading.syncUsers ? 'Requesting...' : 'Request Users from Device' }}
+                            </Button>
                             <div class="rounded-lg border p-4">
                                 <p class="text-sm font-medium mb-1">Device Configuration</p>
                                 <p class="text-xs text-muted-foreground">Ensure your device is set to:</p>
                                 <ul class="text-xs text-muted-foreground mt-1 space-y-0.5">
-                                    <li>Server: <strong class="text-foreground">zkt.alphanumeric.com.ng</strong></li>
-                                    <li>Port: <strong class="text-foreground">80</strong></li>
+                                    <li>Server: <strong class="text-foreground">{{ adms_server }}</strong></li>
+                                    <li>Port: <strong class="text-foreground">{{ adms_port }}</strong></li>
                                     <li>Mode: <strong class="text-foreground">ADMS</strong></li>
                                 </ul>
                             </div>

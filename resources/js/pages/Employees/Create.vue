@@ -20,7 +20,16 @@ interface Device {
     name: string;
 }
 
-const props = defineProps<{ devices: Device[] }>();
+interface Shift {
+    id: number;
+    name: string;
+    department: string | null;
+    unit: string | null;
+    expected_check_in: string;
+    expected_check_out: string;
+}
+
+const props = defineProps<{ devices: Device[]; shifts: Shift[] }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -34,8 +43,10 @@ const form = useForm({
     email: '',
     phone: '',
     department: '',
+    unit: '',
     position: '',
     device_id: '',
+    shift_id: '',
 });
 
 function submit() {
@@ -94,25 +105,50 @@ function submit() {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label for="position">Position (Optional)</Label>
-                                    <Input id="position" v-model="form.position" placeholder="Software Engineer" />
-                                    <InputError :message="form.errors.position" />
+                                    <Label for="unit">Unit (Optional)</Label>
+                                    <Input id="unit" v-model="form.unit" placeholder="Unit A" />
+                                    <InputError :message="form.errors.unit" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="device_id">Assign to Device (Optional)</Label>
-                                <Select v-model="form.device_id">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a device" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem v-for="device in devices" :key="device.id" :value="String(device.id)">
-                                            {{ device.name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError :message="form.errors.device_id" />
+                                <Label for="position">Position (Optional)</Label>
+                                <Input id="position" v-model="form.position" placeholder="Software Engineer" />
+                                <InputError :message="form.errors.position" />
+                            </div>
+
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label for="device_id">Assign to Device (Optional)</Label>
+                                    <Select v-model="form.device_id">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a device" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">None</SelectItem>
+                                            <SelectItem v-for="device in devices" :key="device.id" :value="String(device.id)">
+                                                {{ device.name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError :message="form.errors.device_id" />
+                                </div>
+
+                                <div class="space-y-2">
+                                    <Label for="shift_id">Assign Shift (Optional)</Label>
+                                    <Select v-model="form.shift_id">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a shift" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">Auto-resolve</SelectItem>
+                                            <SelectItem v-for="shift in shifts" :key="shift.id" :value="String(shift.id)">
+                                                {{ shift.name }} ({{ shift.expected_check_in }} – {{ shift.expected_check_out }})
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError :message="form.errors.shift_id" />
+                                </div>
                             </div>
 
                             <div class="flex justify-end gap-3">

@@ -25,7 +25,7 @@ defineProps<{
                         >
                             <Fingerprint class="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <span class="text-base font-semibold">ZKTeco Attendance</span>
+                        <span class="text-base font-semibold">Kaduna Electric</span>
                     </Link>
                     <div class="space-y-2 text-center">
                         <h1 class="text-xl font-medium">{{ title }}</h1>

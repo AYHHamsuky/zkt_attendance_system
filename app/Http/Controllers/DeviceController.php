@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Device;
 use App\Services\ZKTecoService;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
 
 class DeviceController extends Controller
 {
@@ -46,6 +47,7 @@ class DeviceController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'connection_type' => 'required|in:lan,adms',
+            'purpose' => 'required|in:enrollment,attendance',
             'ip_address' => 'required_if:connection_type,lan|nullable|ip',
             'port' => 'required_if:connection_type,lan|nullable|integer|min:1|max:65535',
             'serial_number' => 'required_if:connection_type,adms|nullable|string|max:255',
@@ -74,6 +76,8 @@ class DeviceController extends Controller
 
         return Inertia::render('Devices/Show', [
             'device' => $device,
+            'adms_server' => request()->getHost(),
+            'adms_port' => request()->getPort(),
         ]);
     }
 
@@ -85,6 +89,7 @@ class DeviceController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'connection_type' => 'required|in:lan,adms',
+            'purpose' => 'required|in:enrollment,attendance',
             'ip_address' => 'required_if:connection_type,lan|nullable|ip',
             'port' => 'required_if:connection_type,lan|nullable|integer|min:1|max:65535',
             'serial_number' => 'nullable|string|max:255',
@@ -93,7 +98,7 @@ class DeviceController extends Controller
 
         $device->update($validated);
 
-        return redirect()->route('devices.index')
+        return redirect()->route('devices.show', $device)
             ->with('success', 'Device updated successfully.');
     }
 
@@ -114,7 +119,7 @@ class DeviceController extends Controller
     public function ping(Device $device): RedirectResponse
     {
         if ($device->connection_type === 'adms') {
-            return back()->with('info', 'ADMS devices connect automatically. Status: ' . $device->status . '. Last seen: ' . ($device->last_synced_at?->diffForHumans() ?? 'never'));
+            return back()->with('info', 'ADMS devices connect automatically. Status: '.$device->status.'. Last seen: '.($device->last_synced_at?->diffForHumans() ?? 'never'));
         }
 
         try {
@@ -138,7 +143,7 @@ class DeviceController extends Controller
 
             return back()->with('error', 'Could not connect to device.');
         } catch (Exception $e) {
-            return back()->with('error', 'Connection failed: ' . $e->getMessage());
+            return back()->with('error', 'Connection failed: '.$e->getMessage());
         }
     }
 
@@ -148,11 +153,25 @@ class DeviceController extends Controller
     public function syncUsers(Device $device): RedirectResponse
     {
         if ($device->connection_type === 'adms') {
-            return back()->with('info', 'ADMS devices sync users automatically when enrolled on the device.');
+            if (! $device->serial_number) {
+                return back()->with('error', 'Device has no serial number yet. Wait for it to connect first.');
+            }
+
+            // Queue commands to pull all user, fingerprint and attendance data.
+            $key = 'adms_commands:'.$device->serial_number;
+            $commands = Cache::get($key, []);
+            $id = time();
+            $commands[] = 'C:'.$id.':DATA QUERY USERINFO';
+            $commands[] = 'C:'.($id + 1).':DATA QUERY TEMPLATEINFO';
+            $commands[] = 'C:'.($id + 2).':DATA QUERY ATTLOG';
+            $commands[] = 'C:'.($id + 3).':DATA QUERY OPERLOG';
+            Cache::put($key, $commands, now()->addMinutes(10));
+
+            return back()->with('success', 'Sync requested. The device will push its attendance and enrollment data on next connection (within ~30 seconds).');
         }
 
         try {
-            if (!$this->zkService->connect($device)) {
+            if (! $this->zkService->connect($device)) {
                 return back()->with('error', 'Could not connect to device.');
             }
 
@@ -173,10 +192,37 @@ class DeviceController extends Controller
             $device->update(['last_synced_at' => now()]);
             $this->zkService->disconnect();
 
-            return back()->with('success', count($users) . ' users synced from device.');
+            return back()->with('success', count($users).' users synced from device.');
         } catch (Exception $e) {
-            return back()->with('error', 'Sync failed: ' . $e->getMessage());
+            return back()->with('error', 'Sync failed: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Queue employee + fingerprint sync commands for ALL ADMS devices at once.
+     */
+    public function syncAllUsers(): RedirectResponse
+    {
+        $devices = Device::where('connection_type', 'adms')
+            ->whereNotNull('serial_number')
+            ->get();
+
+        if ($devices->isEmpty()) {
+            return back()->with('error', 'No ADMS devices with serial numbers found.');
+        }
+
+        foreach ($devices as $device) {
+            $key = 'adms_commands:'.$device->serial_number;
+            $commands = Cache::get($key, []);
+            $id = time();
+            $commands[] = 'C:'.$id.':DATA QUERY USERINFO';
+            $commands[] = 'C:'.($id + 1).':DATA QUERY TEMPLATEINFO';
+            $commands[] = 'C:'.($id + 2).':DATA QUERY ATTLOG';
+            $commands[] = 'C:'.($id + 3).':DATA QUERY OPERLOG';
+            Cache::put($key, $commands, now()->addMinutes(10));
+        }
+
+        return back()->with('success', 'Sync requested for '.$devices->count().' device(s). Employees will update within ~30 seconds.');
     }
 
     /**
@@ -189,7 +235,7 @@ class DeviceController extends Controller
         }
 
         try {
-            if (!$this->zkService->connect($device)) {
+            if (! $this->zkService->connect($device)) {
                 return back()->with('error', 'Could not connect to device.');
             }
 
@@ -206,7 +252,7 @@ class DeviceController extends Controller
                     ->where('timestamp', $log['timestamp'])
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     \App\Models\AttendanceLog::create([
                         'uid' => $log['uid'],
                         'employee_id' => $employee?->id,
@@ -222,9 +268,9 @@ class DeviceController extends Controller
             $device->update(['last_synced_at' => now()]);
             $this->zkService->disconnect();
 
-            return back()->with('success', $count . ' new attendance records synced.');
+            return back()->with('success', $count.' new attendance records synced.');
         } catch (Exception $e) {
-            return back()->with('error', 'Sync failed: ' . $e->getMessage());
+            return back()->with('error', 'Sync failed: '.$e->getMessage());
         }
     }
 
@@ -238,7 +284,7 @@ class DeviceController extends Controller
         }
 
         try {
-            if (!$this->zkService->connect($device)) {
+            if (! $this->zkService->connect($device)) {
                 return back()->with('error', 'Could not connect to device.');
             }
 
@@ -247,7 +293,7 @@ class DeviceController extends Controller
 
             return back()->with('success', 'Device restart command sent.');
         } catch (Exception $e) {
-            return back()->with('error', 'Restart failed: ' . $e->getMessage());
+            return back()->with('error', 'Restart failed: '.$e->getMessage());
         }
     }
 }

@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import InputError from '@/components/InputError.vue';
-import { ArrowLeft, Pencil, Fingerprint, CreditCard } from 'lucide-vue-next';
+import { ArrowLeft, Pencil, Fingerprint, CreditCard, Send, CheckCircle } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 interface AttendanceLog {
@@ -23,6 +24,15 @@ interface AttendanceLog {
     type_label: string;
 }
 
+interface Shift {
+    id: number;
+    name: string;
+    department: string | null;
+    unit: string | null;
+    expected_check_in: string;
+    expected_check_out: string;
+}
+
 interface Employee {
     id: number;
     uid: number;
@@ -31,18 +41,27 @@ interface Employee {
     email: string | null;
     phone: string | null;
     department: string | null;
+    unit: string | null;
     position: string | null;
     role: 'user' | 'admin';
     card_number: number;
     has_fingerprint: boolean;
     is_active: boolean;
+    shift_id: number | null;
+    shift: Shift | null;
     device: { id: number; name: string } | null;
     attendance_logs: AttendanceLog[];
     created_at: string;
     updated_at: string;
 }
 
-const props = defineProps<{ employee: Employee }>();
+interface Device {
+    id: number;
+    name: string;
+    serial_number: string;
+}
+
+const props = defineProps<{ employee: Employee; shifts: Shift[]; enrollmentDevices: Device[] }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -51,20 +70,35 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const editing = ref(false);
+const selectedEnrollmentDevice = ref('');
+const enrollmentForm = useForm({ device_id: '' });
+const markEnrolledForm = useForm({});
 
 const form = useForm({
     name: props.employee.name,
     email: props.employee.email ?? '',
     phone: props.employee.phone ?? '',
     department: props.employee.department ?? '',
+    unit: props.employee.unit ?? '',
     position: props.employee.position ?? '',
     is_active: props.employee.is_active,
+    shift_id: props.employee.shift_id ? String(props.employee.shift_id) : '',
 });
 
 function saveEmployee() {
     form.put(`/employees/${props.employee.id}`, {
         onSuccess: () => { editing.value = false; },
     });
+}
+
+function sendToEnrollment() {
+    if (!selectedEnrollmentDevice.value) return;
+    enrollmentForm.device_id = selectedEnrollmentDevice.value;
+    enrollmentForm.post(`/employees/${props.employee.id}/send-to-enrollment`);
+}
+
+function markEnrolled() {
+    markEnrolledForm.post(`/employees/${props.employee.id}/mark-enrolled`);
 }
 
 function stateBadgeVariant(state: number): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -150,10 +184,30 @@ function formatTime(timestamp: string): string {
                                     <InputError :message="form.errors.department" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="position">Position</Label>
-                                    <Input id="position" v-model="form.position" />
-                                    <InputError :message="form.errors.position" />
+                                    <Label for="unit">Unit</Label>
+                                    <Input id="unit" v-model="form.unit" />
+                                    <InputError :message="form.errors.unit" />
                                 </div>
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="position">Position</Label>
+                                <Input id="position" v-model="form.position" />
+                                <InputError :message="form.errors.position" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="shift_id">Shift</Label>
+                                <Select v-model="form.shift_id">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Auto-resolve" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">Auto-resolve</SelectItem>
+                                        <SelectItem v-for="shift in shifts" :key="shift.id" :value="String(shift.id)">
+                                            {{ shift.name }} ({{ shift.expected_check_in }} – {{ shift.expected_check_out }})
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError :message="form.errors.shift_id" />
                             </div>
                             <div class="flex items-center gap-2">
                                 <Checkbox id="is_active" :checked="form.is_active" @update:checked="(val: boolean) => form.is_active = val" />
@@ -190,8 +244,16 @@ function formatTime(timestamp: string): string {
                                 <dd class="font-medium">{{ employee.department ?? '—' }}</dd>
                             </div>
                             <div class="flex justify-between">
+                                <dt class="text-muted-foreground">Unit</dt>
+                                <dd class="font-medium">{{ employee.unit ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between">
                                 <dt class="text-muted-foreground">Position</dt>
                                 <dd class="font-medium">{{ employee.position ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-muted-foreground">Shift</dt>
+                                <dd class="font-medium">{{ employee.shift?.name ?? '—' }}</dd>
                             </div>
                             <div class="flex justify-between">
                                 <dt class="text-muted-foreground">Role</dt>
@@ -214,6 +276,53 @@ function formatTime(timestamp: string): string {
                                         {{ employee.has_fingerprint ? 'Enrolled' : 'Not Enrolled' }}
                                     </Badge>
                                 </dd>
+                            </div>
+
+                            <!-- Enrollment Actions -->
+                            <div class="rounded-lg border p-3 space-y-3 mt-2">
+                                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Fingerprint Management</p>
+
+                                <!-- Send to enrollment device -->
+                                <div class="space-y-2">
+                                    <p class="text-xs text-muted-foreground">
+                                        Send employee to an enrollment device to (re-)capture their fingerprint:
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <Select v-model="selectedEnrollmentDevice" class="flex-1">
+                                            <SelectTrigger class="h-8 text-xs">
+                                                <SelectValue placeholder="Select enrollment device" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem v-for="d in enrollmentDevices" :key="d.id" :value="String(d.id)">
+                                                    {{ d.name }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            :disabled="!selectedEnrollmentDevice || enrollmentForm.processing"
+                                            @click="sendToEnrollment"
+                                        >
+                                            <Send class="mr-1 size-3" />
+                                            Send
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <!-- Mark as enrolled manually -->
+                                <div v-if="!employee.has_fingerprint" class="flex items-center justify-between border-t pt-3">
+                                    <p class="text-xs text-muted-foreground">Already captured on device?</p>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        :disabled="markEnrolledForm.processing"
+                                        @click="markEnrolled"
+                                    >
+                                        <CheckCircle class="mr-1 size-3" />
+                                        Mark as Enrolled
+                                    </Button>
+                                </div>
                             </div>
                             <div class="flex justify-between items-center">
                                 <dt class="text-muted-foreground flex items-center gap-1">

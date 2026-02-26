@@ -24,7 +24,7 @@ defineProps<{
                 <div class="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
                     <Fingerprint class="h-5 w-5 text-primary-foreground" />
                 </div>
-                ZKTeco Attendance
+                Kaduna Electric
             </Link>
             <div class="relative z-20 mt-auto">
                 <div class="mb-8 space-y-4">
