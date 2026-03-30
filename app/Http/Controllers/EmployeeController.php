@@ -21,13 +21,8 @@ class EmployeeController extends Controller
         $query = Employee::with('device');
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('user_id', 'like', "%{$search}%")
-                    ->orWhere('department', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
+            $matchingIds = Employee::search($request->input('search'))->keys();
+            $query->whereIn('id', $matchingIds);
         }
 
         if ($request->filled('department')) {

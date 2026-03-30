@@ -6,11 +6,27 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use Laravel\Scout\Searchable;
 
 class Employee extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'name' => $this->name,
+            'user_id' => $this->user_id,
+            'email' => $this->email ?? '',
+            'department' => $this->department ?? '',
+            'unit' => $this->unit ?? '',
+            'position' => $this->position ?? '',
+            'location' => $this->location ?? '',
+            'region' => $this->region ?? '',
+        ];
+    }
 
     protected $fillable = [
         'uid',
@@ -29,6 +45,7 @@ class Employee extends Model
         'shift_id',
         'region',
         'location',
+        'photo_path',
     ];
 
     protected function casts(): array
@@ -54,6 +71,51 @@ class Employee extends Model
     public function attendanceLogs(): HasMany
     {
         return $this->hasMany(AttendanceLog::class);
+    }
+
+    public function hrProfile(): HasOne
+    {
+        return $this->hasOne(HrProfile::class);
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+
+    public function leaveApplications(): HasMany
+    {
+        return $this->hasMany(LeaveApplication::class);
+    }
+
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(LeaveBalance::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(EmployeeTransfer::class);
+    }
+
+    public function resignation(): HasOne
+    {
+        return $this->hasOne(EmployeeResignation::class);
+    }
+
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(HrAuditLog::class);
     }
 
     /**

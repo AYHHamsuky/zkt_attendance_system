@@ -2,25 +2,19 @@
 
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\HR\HrDashboardController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
 // Health/Heartbeat check — no auth required
 Route::get('/api/health', HealthController::class)->name('health');
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
-})->name('home');
+Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Dashboard
-    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    // Main dashboard — HR Dashboard
+    Route::get('dashboard', HrDashboardController::class)->name('dashboard');
 
     // Devices — admin only
     Route::middleware('admin')->group(function () {
@@ -44,3 +38,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/hr.php';

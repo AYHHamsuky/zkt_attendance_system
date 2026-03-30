@@ -5,7 +5,7 @@
         "gemini"
     ],
     "guidelines": true,
-    "herd_mcp": false,
+    "herd_mcp": true,
     "mcp": true,
     "nightwatch_mcp": false,
     "packages": [
@@ -13,7 +13,9 @@
     ],
     "sail": false,
     "skills": [
+        "pennant-development",
         "wayfinder-development",
+        "livewire-development",
         "pest-testing",
         "inertia-vue-development",
         "tailwindcss-development",

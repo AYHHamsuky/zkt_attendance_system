@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(php artisan make:class App/Http/Controllers/HR/PerformanceTemplateController --no-interaction)",
+      "Bash(php artisan test --compact --filter=Performance)",
+      "Bash(php artisan tinker --no-interaction --execute=\"foreach\\(DB::select\\(''PRAGMA table_info\\(performance_objectives\\)''\\) as $c\\) echo $c->name . PHP_EOL;\")",
+      "Bash(php artisan make:migration add_bsc_fields_to_performance_objectives_table --no-interaction)",
+      "Bash(php artisan make:migration add_employee_comment_to_performance_reviews_table --no-interaction)",
+      "Bash(php artisan test --compact --filter=\"Settings\")",
+      "Bash(php artisan make:test --pest Settings/UserManagementTest --no-interaction)",
+      "Bash(php artisan test --compact --filter=\"UserManagementTest\")",
+      "Bash(php artisan route:list --name=settings.users)",
+      "Bash(php artisan make:controller HR/PerformanceReportController --no-interaction)",
+      "Bash(php artisan wayfinder:generate --no-interaction)",
+      "Bash(php artisan test --compact --filter=UserManagement)",
+      "Bash(php artisan make:migration add_last_login_at_to_users_table --no-interaction)"
+    ]
+  }
+}

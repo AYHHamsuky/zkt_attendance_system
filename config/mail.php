@@ -115,4 +115,9 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    'hr_addresses' => [
+        'performance' => env('PERFORMANCE_MAIL_FROM', env('MAIL_FROM_ADDRESS')),
+        'leave' => env('LEAVE_MAIL_FROM', env('MAIL_FROM_ADDRESS')),
+    ],
+
 ];

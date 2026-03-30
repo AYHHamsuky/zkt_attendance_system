@@ -13,16 +13,25 @@
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
+        "laravel/octane": "^2.14",
+        "laravel/pennant": "^1.20",
+        "laravel/pulse": "^1.6",
+        "laravel/reverb": "^1.8",
+        "laravel/sanctum": "^4.0",
+        "laravel/scout": "^10.24",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
+        "livewire/livewire": "^4.2",
         "rats/zkteco": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/boost": "*",
+        "laravel/boost": "^2.1",
+        "laravel/dusk": "^8.3",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
         "laravel/sail": "^1.41",
+        "laravel/telescope": "^5.18",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "pestphp/pest": "^4.3",
@@ -52,6 +61,10 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "octane": [
+            "Composer\\Config::disableProcessTimeout",
+            "php artisan octane:start --server=frankenphp --watch"
         ],
         "dev:ssr": [
             "npm run build:ssr",

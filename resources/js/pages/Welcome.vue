@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
+const register = () => '/register';
 import { Fingerprint, Clock, Users, ShieldCheck, ArrowRight, Server } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 
