@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, KeyRound, ShieldCheck, Building2, Users, Search, UserPlus, Download, ShieldAlert, Link2 } from 'lucide-vue-next';
+import { Plus, Trash2, KeyRound, ShieldCheck, Building2, Users, Search, UserPlus, Download, ShieldAlert, Link2, RotateCcw } from 'lucide-vue-next';
 import { Link } from '@inertiajs/vue3';
 import { index as userAccessRoute } from '@/actions/App/Http/Controllers/Settings/UserAccessController';
 import { ref, computed } from 'vue';
@@ -142,6 +142,13 @@ function submitPassword() {
     passwordForm.post(`/settings/users/${passwordUser.value.id}/reset-password`, {
         onSuccess: () => { passwordDialogOpen.value = false; },
     });
+}
+
+// ── Reset Onboarding ───────────────────────────────────────────────────────
+function resetOnboarding(user: UserRow, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`Reset onboarding for "${user.name}"? They will see the guided tour on their next login.`)) return;
+    router.post(`/settings/users/${user.id}/reset-onboarding`, {}, { preserveScroll: true });
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────
@@ -433,6 +440,15 @@ const paginationTo = computed(() => props.users.to ?? Math.min(props.users.curre
                                         <Link :href="userAccessRoute(user.id).url">
                                             <ShieldAlert class="size-3.5" />
                                         </Link>
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        class="size-7"
+                                        title="Reset onboarding tour"
+                                        @click="resetOnboarding(user, $event)"
+                                    >
+                                        <RotateCcw class="size-3.5" />
                                     </Button>
                                     <Button
                                         size="icon"

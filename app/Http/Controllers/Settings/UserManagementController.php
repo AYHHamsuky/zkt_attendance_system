@@ -170,6 +170,14 @@ class UserManagementController extends Controller
         return back()->with('success', 'User account deleted.');
     }
 
+    /** Reset a user's onboarding so they see the welcome tour on next login. */
+    public function resetOnboarding(User $user): RedirectResponse
+    {
+        $user->update(['onboarding_state' => null]);
+
+        return back()->with('success', "Onboarding reset for {$user->name}. They will see the guided tour on next login.");
+    }
+
     /** Link (or unlink) a user account to an employee record. */
     public function linkEmployee(Request $request, User $user): RedirectResponse
     {

@@ -31,6 +31,7 @@ class User extends Authenticatable
         'role',
         'employee_id',
         'last_login_at',
+        'onboarding_state',
     ];
 
     /**
@@ -52,6 +53,27 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'onboarding_state' => 'array',
+        ];
+    }
+
+    /**
+     * Whether this user has never seen the onboarding tour.
+     * A null onboarding_state means no login has been recorded yet.
+     */
+    public function isFirstLogin(): bool
+    {
+        return is_null($this->onboarding_state);
+    }
+
+    /** Default blank onboarding state structure. */
+    public static function defaultOnboardingState(): array
+    {
+        return [
+            'completed' => false,
+            'welcome_shown' => false,
+            'completed_steps' => [],
+            'current_step' => null,
         ];
     }
 

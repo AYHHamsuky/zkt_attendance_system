@@ -8,6 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle, Clock, Plus, Trash2, Lock, AlertTriangle, ChevronRight, Upload } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { useModuleTour } from '@/composables/useModuleTour';
+
+useModuleTour('performance_review', 800);
 
 interface TrackingEntry {
     id: number;
@@ -388,7 +391,7 @@ function planObjIndex(id: number): number {
         <div class="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
             <!-- Header -->
-            <div class="flex flex-wrap items-start gap-4 justify-between">
+            <div class="flex flex-wrap items-start gap-4 justify-between" data-tour="perf-review-header">
                 <div>
                     <h1 class="text-2xl font-bold">{{ review.employee.name }}</h1>
                     <p class="text-sm text-muted-foreground">
@@ -445,7 +448,7 @@ function planObjIndex(id: number): number {
                         <span>Planning phase agreed and locked on {{ formatDate(review.planning_locked_at) }}</span>
                     </div>
 
-                    <div class="px-6 py-4 space-y-4">
+                    <div class="px-6 py-4 space-y-4" data-tour="perf-objectives-section">
                         <!-- Objectives Table -->
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm border-collapse">
@@ -716,7 +719,7 @@ function planObjIndex(id: number): number {
                                         <span>Target: <strong>{{ obj.target ?? '—' }}</strong></span>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2" data-tour="perf-progress-status">
                                     <span v-if="obj.progress_status" :class="['text-xs px-2 py-0.5 rounded-full', trackingStatusColor(obj.progress_status)]">
                                         {{ trackingStatusLabel(obj.progress_status) }}
                                     </span>
@@ -787,7 +790,7 @@ function planObjIndex(id: number): number {
                         <h2 class="font-semibold text-purple-900">Final Appraisal</h2>
                         <p class="text-xs text-purple-700 mt-0.5">Employee self-rates and manager scores each objective independently.</p>
                     </div>
-                    <div class="px-6 py-4 space-y-4">
+                    <div class="px-6 py-4 space-y-4" data-tour="perf-objectives-section">
 
                         <!-- Rating scale legend -->
                         <div class="grid grid-cols-5 gap-2 text-xs">
@@ -825,7 +828,7 @@ function planObjIndex(id: number): number {
                                         <td class="border px-3 py-2 text-sm">{{ obj.target ?? '—' }}</td>
 
                                         <!-- Yearly Achieved — editable by employee in rating phase -->
-                                        <td class="border px-2 py-1">
+                                        <td class="border px-2 py-1" data-tour="perf-yearly-achieved">
                                             <template v-if="isEmployee && review.status === 'rating' && ratingObjIndex(obj.id) >= 0">
                                                 <input type="text"
                                                     v-model="ratingForm.objectives[ratingObjIndex(obj.id)].yearly_achieved"
@@ -836,7 +839,7 @@ function planObjIndex(id: number): number {
                                         </td>
 
                                         <!-- Self Rating — editable by employee in rating phase -->
-                                        <td class="border px-2 py-1 text-center">
+                                        <td class="border px-2 py-1 text-center" data-tour="perf-self-rating">
                                             <template v-if="isEmployee && review.status === 'rating' && ratingObjIndex(obj.id) >= 0">
                                                 <select v-model.number="ratingForm.objectives[ratingObjIndex(obj.id)].self_rating"
                                                     class="w-24 text-sm border rounded p-1 focus:ring-1 focus:ring-purple-300">
@@ -875,7 +878,7 @@ function planObjIndex(id: number): number {
                         </div>
 
                         <!-- Employee self-remark textarea section -->
-                        <div v-if="isEmployee && review.status === 'rating'" class="space-y-2">
+                        <div v-if="isEmployee && review.status === 'rating'" class="space-y-2" data-tour="perf-employee-comment">
                             <label class="text-sm font-medium">Employee Overall Comment</label>
                             <Textarea v-model="ratingForm.employee_comment" :rows="3"
                                 placeholder="Overall comment on your performance this cycle…" />
@@ -886,7 +889,7 @@ function planObjIndex(id: number): number {
                         </div>
 
                         <!-- Employee save/submit buttons -->
-                        <div v-if="isEmployee && review.status === 'rating'" class="flex gap-3 justify-end">
+                        <div v-if="isEmployee && review.status === 'rating'" class="flex gap-3 justify-end" data-tour="perf-submit-btn">
                             <Button variant="outline" @click="saveRatings" :disabled="ratingForm.processing">
                                 {{ ratingForm.processing ? 'Saving…' : 'Save Self-Ratings' }}
                             </Button>
@@ -930,7 +933,8 @@ function planObjIndex(id: number): number {
                  TRAINING NEEDS (Phase 3 & Finalized)
             ═══════════════════════════════════════ -->
             <div v-if="cyclePhase === 'rating' || review.status === 'rating' || review.status === 'finalized'"
-                class="bg-white border rounded-xl shadow-sm overflow-hidden">
+                class="bg-white border rounded-xl shadow-sm overflow-hidden"
+                data-tour="perf-training-needs">
                 <div class="bg-gray-50 border-b px-6 py-4 flex items-center justify-between">
                     <h2 class="font-semibold">Training Needs</h2>
                     <Button v-if="canManageReview" variant="outline" size="sm" @click="showTrainingForm = !showTrainingForm">

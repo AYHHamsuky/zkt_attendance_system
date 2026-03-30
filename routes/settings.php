@@ -45,6 +45,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('settings/users/{user}/link-employee', [App\Http\Controllers\Settings\UserManagementController::class, 'linkEmployee'])->name('settings.users.link-employee');
     Route::post('settings/users/{user}/reset-password', [App\Http\Controllers\Settings\UserManagementController::class, 'resetPassword'])->name('settings.users.reset-password');
     Route::delete('settings/users/{user}', [App\Http\Controllers\Settings\UserManagementController::class, 'destroy'])->name('settings.users.destroy');
+    Route::post('settings/users/{user}/reset-onboarding', [App\Http\Controllers\Settings\UserManagementController::class, 'resetOnboarding'])->name('settings.users.reset-onboarding');
 
     // Per-user Access Rights (view by admin, toggle by super_admin — enforced in controller)
     Route::get('settings/users/{user}/access', [App\Http\Controllers\Settings\UserAccessController::class, 'index'])->name('settings.users.access');

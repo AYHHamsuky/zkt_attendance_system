@@ -16,6 +16,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Search, Plus, Eye, Calendar, CheckCircle, XCircle, Trash2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { debounce } from '@/lib/debounce';
+import { useModuleTour } from '@/composables/useModuleTour';
+
+useModuleTour('leave_overview');
 
 interface LeaveApplication {
     id: number;
@@ -151,7 +154,7 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
     <Head title="Leave Applications" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between" data-tour="leave-page-header">
                 <div>
                     <h2 class="text-2xl font-bold tracking-tight">
                         {{ canManage ? 'Leave Applications' : 'My Leave Applications' }}
@@ -162,14 +165,14 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
                     <Button v-if="canManage" variant="outline" as-child>
                         <Link href="/hr/leave-types">Manage Leave Types</Link>
                     </Button>
-                    <Button as-child>
+                    <Button as-child data-tour="leave-new-btn">
                         <Link href="/hr/leave/create"><Plus class="mr-2 size-4" />New Application</Link>
                     </Button>
                 </div>
             </div>
 
             <!-- Filters — admin/hr only -->
-            <div v-if="canManage" class="flex flex-wrap gap-3">
+            <div v-if="canManage" class="flex flex-wrap gap-3" data-tour="leave-filters">
                 <div class="relative min-w-[200px] flex-1 max-w-sm">
                     <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input v-model="search" placeholder="Search employee..." class="pl-9" />
@@ -195,7 +198,7 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
                 </Select>
             </div>
 
-            <Card>
+            <Card data-tour="leave-table">
                 <CardContent class="p-0">
                     <Table>
                         <TableHeader>
@@ -284,6 +287,9 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
                     </Table>
                 </CardContent>
             </Card>
+
+            <!-- Invisible anchor used by the onboarding tour to explain status labels -->
+            <div data-tour="leave-status-help" class="sr-only" aria-hidden="true"></div>
 
             <div v-if="applications.last_page > 1" class="flex items-center justify-center gap-1">
                 <template v-for="link in applications.links" :key="link.label">

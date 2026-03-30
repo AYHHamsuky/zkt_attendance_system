@@ -12,6 +12,9 @@ import { type BreadcrumbItem } from '@/types';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
+import { useModuleTour } from '@/composables/useModuleTour';
+
+useModuleTour('profile_update');
 
 type Props = {
     mustVerifyEmail: boolean;
@@ -49,8 +52,9 @@ const user = page.props.auth.user;
                     v-bind="ProfileController.update.form()"
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
+                    data-tour="profile-form"
                 >
-                    <div class="grid gap-2">
+                    <div class="grid gap-2" data-tour="profile-name">
                         <Label for="name">Name</Label>
                         <Input
                             id="name"
@@ -64,7 +68,7 @@ const user = page.props.auth.user;
                         <InputError class="mt-2" :message="errors.name" />
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="grid gap-2" data-tour="profile-email">
                         <Label for="email">Email address</Label>
                         <Input
                             id="email"
@@ -104,6 +108,7 @@ const user = page.props.auth.user;
                         <Button
                             :disabled="processing"
                             data-test="update-profile-button"
+                            data-tour="profile-save"
                             >Save</Button
                         >
 

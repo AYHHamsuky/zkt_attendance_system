@@ -11,6 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import EmployeeCombobox from '@/components/EmployeeCombobox.vue';
 import { AlertTriangle, Info, Upload } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
+import { useModuleTour } from '@/composables/useModuleTour';
+
+useModuleTour('leave_apply', 800);
 
 interface LeaveType {
     id: number;
@@ -117,7 +120,7 @@ function submit() {
                     <form class="space-y-4" @submit.prevent="submit">
 
                         <!-- Employee — auto-filled from logged-in user, read-only -->
-                        <div class="space-y-1.5">
+                        <div class="space-y-1.5" data-tour="leave-form-employee">
                             <Label>Employee</Label>
                             <div class="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
                                 <span class="font-medium">{{ myEmployee?.name ?? '—' }}</span>
@@ -127,7 +130,7 @@ function submit() {
                         </div>
 
                         <!-- Leave Type -->
-                        <div class="space-y-1.5">
+                        <div class="space-y-1.5" data-tour="leave-form-type">
                             <Label>Leave Type <span class="text-destructive">*</span></Label>
                             <Select :model-value="form.leave_type_id || ''" @update:model-value="v => form.leave_type_id = String(v)">
                                 <SelectTrigger><SelectValue placeholder="Select leave type" /></SelectTrigger>
@@ -138,7 +141,7 @@ function submit() {
                                 </SelectContent>
                             </Select>
                             <p v-if="form.errors.leave_type_id" class="text-sm text-destructive">{{ form.errors.leave_type_id }}</p>
-                            <p v-if="selectedLeaveType" class="text-xs text-muted-foreground">
+                            <p v-if="selectedLeaveType" class="text-xs text-muted-foreground" data-tour="leave-form-balance">
                                 Balance: <strong>{{ remainingDays }}</strong> day(s) remaining of {{ selectedLeaveType.days_allowed_per_year }}
                                 <template v-if="selectedBalance">
                                     ({{ selectedBalance.days_taken }} taken, {{ selectedBalance.days_pending }} pending)
@@ -147,7 +150,7 @@ function submit() {
                         </div>
 
                         <!-- Dates -->
-                        <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="grid gap-4 sm:grid-cols-2" data-tour="leave-form-dates">
                             <div class="space-y-1.5">
                                 <Label>Start Date <span class="text-destructive">*</span></Label>
                                 <Input v-model="form.start_date" type="date" />
@@ -196,7 +199,7 @@ function submit() {
                         </div>
 
                         <!-- Reliever — required, filtered by same department -->
-                        <div class="space-y-1.5">
+                        <div class="space-y-1.5" data-tour="leave-form-reliever">
                             <Label>
                                 Reliever
                                 <span class="text-destructive">*</span>
@@ -212,7 +215,7 @@ function submit() {
                         </div>
 
                         <!-- Supporting Document — shown only if leave type requires it -->
-                        <div v-if="selectedLeaveType?.requires_document" class="space-y-1.5">
+                        <div v-if="selectedLeaveType?.requires_document" class="space-y-1.5" data-tour="leave-form-document">
                             <Label>
                                 {{ selectedLeaveType.document_label || 'Supporting Document' }}
                                 <span class="text-destructive">*</span>
@@ -229,14 +232,14 @@ function submit() {
                         </div>
 
                         <!-- Reason -->
-                        <div class="space-y-1.5">
+                        <div class="space-y-1.5" data-tour="leave-form-reason">
                             <Label>Reason</Label>
                             <Textarea v-model="form.reason" placeholder="Brief reason for leave..." rows="3" />
                         </div>
 
                         <div class="flex justify-end gap-2 pt-2">
                             <Button type="button" variant="outline" as-child><Link href="/hr/leave">Cancel</Link></Button>
-                            <Button type="submit" :disabled="form.processing || exceedsBalance">
+                            <Button type="submit" :disabled="form.processing || exceedsBalance" data-tour="leave-form-submit">
                                 {{ form.processing ? 'Submitting…' : 'Submit Application' }}
                             </Button>
                         </div>

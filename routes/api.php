@@ -7,6 +7,12 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+// Onboarding state — web session auth (no Sanctum token needed for SPA)
+Route::middleware('auth')->prefix('onboarding')->name('api.onboarding.')->group(function () {
+    Route::get('status', [App\Http\Controllers\OnboardingController::class, 'status'])->name('status');
+    Route::post('update', [App\Http\Controllers\OnboardingController::class, 'update'])->name('update');
+});
+
 /**
  * ZKTeco device sync API — authenticated with Sanctum token abilities.
  * Token ability required: 'attendance:sync'

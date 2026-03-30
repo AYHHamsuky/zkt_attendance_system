@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, ChevronRight, Clock, CheckCircle, Star } from 'lucide-vue-next';
+import { useModuleTour } from '@/composables/useModuleTour';
+
+useModuleTour('performance_mine');
 
 interface Review {
     id: number;
@@ -62,7 +65,7 @@ function formatDate(d: string | null): string {
         <div class="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
 
             <!-- Header -->
-            <div>
+            <div data-tour="perf-mine-header">
                 <h2 class="text-2xl font-bold">My Performance Appraisals</h2>
                 <p v-if="employee" class="text-muted-foreground">
                     {{ employee.name }} · {{ employee.position ?? employee.department }}
@@ -92,7 +95,7 @@ function formatDate(d: string | null): string {
             </Card>
 
             <!-- Appraisal cards -->
-            <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-tour="perf-reviews-grid">
                 <Card
                     v-for="review in reviews"
                     :key="review.id"

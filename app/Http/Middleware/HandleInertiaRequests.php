@@ -32,6 +32,10 @@ class HandleInertiaRequests extends Middleware
                     'role' => $user->role,
                 ] : null,
                 'permissions' => $user ? $this->resolvePermissions($user) : [],
+                'onboarding' => $user ? [
+                    'is_first_login' => $user->isFirstLogin(),
+                    'state' => $user->onboarding_state ?? \App\Models\User::defaultOnboardingState(),
+                ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

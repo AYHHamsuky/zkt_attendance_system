@@ -109,12 +109,12 @@ const footerNavItems: NavItem[] = [
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar collapsible="icon" variant="inset" data-tour="sidebar">
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="dashboard()" data-tour="nav-dashboard">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
@@ -133,6 +133,7 @@ const footerNavItems: NavItem[] = [
                 :items="hrItems"
                 :groups="hrGroups"
                 :collapsible="true"
+                data-tour="nav-hr"
             />
 
             <!--
