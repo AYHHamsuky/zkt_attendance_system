@@ -43,7 +43,8 @@ fi
 
 # ---- 4. Fix MySQL root auth & create DB/user ----
 echo "[4/11] Configuring MySQL..."
-mysql -u root <<SQL
+# Ubuntu 24.04: root uses auth_socket plugin — must connect via socket (no password)
+mysql --user=root --socket=/var/run/mysqld/mysqld.sock <<SQL
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
 CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
