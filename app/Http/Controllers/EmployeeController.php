@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Shift;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,9 +21,22 @@ class EmployeeController extends Controller
     {
         $query = Employee::with('device');
 
+        // Archived filter: default shows only active (non-archived) employees
+        $archivedFilter = $request->input('archived', 'no');
+        if ($archivedFilter === 'yes') {
+            $query->whereNotNull('archived_at');
+        } else {
+            $query->whereNull('archived_at');
+        }
+
         if ($request->filled('search')) {
-            $matchingIds = Employee::search($request->input('search'))->keys();
-            $query->whereIn('id', $matchingIds);
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('user_id', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
         }
 
         if ($request->filled('department')) {
@@ -47,7 +61,7 @@ class EmployeeController extends Controller
         return Inertia::render('Employees/Index', [
             'employees' => $employees,
             'departments' => $departments,
-            'filters' => $request->only(['search', 'department', 'status', 'fingerprint']),
+            'filters' => $request->only(['search', 'department', 'status', 'fingerprint', 'archived']),
         ]);
     }
 
@@ -167,16 +181,21 @@ class EmployeeController extends Controller
             Cache::put($key, $commands, now()->addMinutes(10));
         }
 
-        // Queue a SET USER command so the employee appears on the enrollment device.
-        $key = 'adms_commands:'.$device->serial_number;
-        $commands = Cache::get($key, []);
-        $id = time() + 1000; // after the deletes
-        $commands[] = 'C:'.$id.':SET USER\tPIN='.$employee->uid.'\tName='.str_replace('\t', ' ', $employee->name).'\tPri=0\tPasswd=\tCard=0\tGrp=1\tTZ=0000000100000000';
-        Cache::put($key, $commands, now()->addMinutes(10));
+        // Queue a SET USER command so the employee appears on ALL enrollment devices.
+        $enrollmentDevices = Device::where('purpose', 'enrollment')
+            ->whereNotNull('serial_number')
+            ->get();
+        foreach ($enrollmentDevices as $enrollDevice) {
+            $key = 'adms_commands:'.$enrollDevice->serial_number;
+            $commands = Cache::get($key, []);
+            $id = time() + 1000 + $enrollDevice->id; // unique per device, after the deletes
+            $commands[] = "C:{$id}:DATA UPDATE USERINFO PIN={$employee->uid}\tName=".str_replace("\t", ' ', $employee->name)."\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000";
+            Cache::put($key, $commands, now()->addMinutes(10));
+        }
 
         $employee->update(['has_fingerprint' => false]);
 
-        return back()->with('success', $employee->name.' has been sent to '.$device->name.' for fingerprint enrollment. Their old fingerprint has been cleared from all devices — they will appear for fresh enrollment within ~30 seconds.');
+        return back()->with('success', $employee->name.' has been sent to all enrollment devices for fingerprint enrollment. Their old fingerprint has been cleared from all devices — they will appear for fresh enrollment within ~30 seconds.');
     }
 
     /**
@@ -187,6 +206,42 @@ class EmployeeController extends Controller
         $employee->update(['has_fingerprint' => true]);
 
         return back()->with('success', $employee->name."'s fingerprint has been marked as enrolled.");
+    }
+
+    /**
+     * Archive an employee — marks them as no longer with the company.
+     * Restricted to admin and super admin.
+     */
+    public function archive(Request $request, Employee $employee): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $employee->update([
+            'archived_at' => Carbon::now(),
+            'archive_reason' => $validated['reason'] ?? null,
+            'is_active' => false,
+        ]);
+
+        return redirect()->route('employees.index')
+            ->with('success', $employee->name.' has been archived.');
+    }
+
+    /**
+     * Unarchive an employee — reinstates them as an active employee.
+     * Restricted to admin and super admin.
+     */
+    public function unarchive(Employee $employee): RedirectResponse
+    {
+        $employee->update([
+            'archived_at' => null,
+            'archive_reason' => null,
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('employees.show', $employee)
+            ->with('success', $employee->name.' has been reinstated.');
     }
 
     /**

@@ -19,7 +19,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserCheck, UserX, Clock, BarChart3, Filter, X, Download, Search } from 'lucide-vue-next';
+import { Users, UserCheck, UserX, Clock, BarChart3, Filter, X, Download, Search, Palmtree } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
 interface Device {
@@ -41,6 +41,7 @@ interface EmployeeReport {
     total_logs: number;
     tardy_count: number;
     early_out_count: number;
+    on_leave_days: number;
 }
 
 interface GroupedReport {
@@ -58,6 +59,7 @@ const props = defineProps<{
     summary: {
         total_employees: number;
         today_present: number;
+        today_on_leave: number;
         today_absent: number;
         today_tardy: number;
     };
@@ -179,7 +181,7 @@ const hasActiveFilters = computed(() =>
             </div>
 
             <!-- Summary Cards -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle class="text-sm font-medium">Total Employees</CardTitle>
@@ -200,11 +202,22 @@ const hasActiveFilters = computed(() =>
                 </Card>
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">On Leave Today</CardTitle>
+                        <Palmtree class="size-4 text-blue-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-blue-600">{{ summary.today_on_leave }}</div>
+                        <p class="text-xs text-muted-foreground">Approved leave</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle class="text-sm font-medium">Absent Today</CardTitle>
                         <UserX class="size-4 text-red-600" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold text-red-600">{{ summary.today_absent }}</div>
+                        <p class="text-xs text-muted-foreground">No leave on record</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -320,6 +333,7 @@ const hasActiveFilters = computed(() =>
                                         <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="present">Present Only</SelectItem>
                                         <SelectItem value="absent">Absent Only</SelectItem>
+                                        <SelectItem value="on_leave">On Leave Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -439,20 +453,32 @@ const hasActiveFilters = computed(() =>
                                 <TableHead class="text-center">Check Outs</TableHead>
                                 <TableHead class="text-center">Late In</TableHead>
                                 <TableHead class="text-center">Early Out</TableHead>
+                                <TableHead class="text-center">On Leave</TableHead>
                                 <TableHead>Attendance Rate</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            <TableRow v-for="emp in (reportData as EmployeeReport[])" :key="emp.id">
+                            <TableRow
+                                v-for="emp in (reportData as EmployeeReport[])"
+                                :key="emp.id"
+                                :class="emp.on_leave_days > 0 && emp.check_ins === 0 ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
+                            >
                                 <TableCell>
-                                    <Link
-                                        :href="`/attendance?search=${emp.user_id}&date_from=${filters.date_from}&date_to=${filters.date_to}`"
-                                        class="font-medium text-primary hover:underline"
-                                        title="View daily logs"
-                                    >
-                                        {{ emp.name }}
-                                    </Link>
-                                    <p class="text-xs text-muted-foreground">{{ emp.user_id ?? `UID: ${emp.uid}` }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <div>
+                                            <Link
+                                                :href="`/attendance?search=${emp.user_id}&date_from=${filters.date_from}&date_to=${filters.date_to}`"
+                                                class="font-medium text-primary hover:underline"
+                                                title="View daily logs"
+                                            >
+                                                {{ emp.name }}
+                                            </Link>
+                                            <p class="text-xs text-muted-foreground">{{ emp.user_id ?? `UID: ${emp.uid}` }}</p>
+                                        </div>
+                                        <Badge v-if="emp.on_leave_days > 0 && emp.check_ins === 0" class="shrink-0 bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300">
+                                            On Leave
+                                        </Badge>
+                                    </div>
                                 </TableCell>
                                 <TableCell>{{ emp.department ?? '—' }}</TableCell>
                                 <TableCell>{{ emp.unit ?? '—' }}</TableCell>
@@ -473,6 +499,12 @@ const hasActiveFilters = computed(() =>
                                         {{ emp.early_out_count }}
                                     </Badge>
                                 </TableCell>
+                                <TableCell class="text-center">
+                                    <Badge v-if="emp.on_leave_days > 0" class="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300">
+                                        {{ emp.on_leave_days }}d
+                                    </Badge>
+                                    <span v-else class="text-muted-foreground">—</span>
+                                </TableCell>
                                 <TableCell>
                                     <div class="flex items-center gap-2">
                                         <Progress
@@ -486,7 +518,7 @@ const hasActiveFilters = computed(() =>
                                 </TableCell>
                             </TableRow>
                             <TableRow v-if="reportData.length === 0">
-                                <TableCell colspan="9" class="text-center text-muted-foreground py-8">
+                                <TableCell colspan="10" class="text-center text-muted-foreground py-8">
                                     <BarChart3 class="size-8 mx-auto mb-2 opacity-50" />
                                     No employees found for the selected period.
                                 </TableCell>

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceLog;
 use App\Models\Device;
 use App\Models\Employee;
+use App\Models\LeaveApplication;
 use App\Models\Shift;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +68,7 @@ class AttendanceController extends Controller
             'sessions' => $sessions,
             'filters' => $request->only(['search', 'date_from', 'date_to', 'department']),
             'departments' => $departments,
+            'myClockStatus' => $this->getMyClockStatus(),
         ]);
     }
 
@@ -131,13 +134,22 @@ class AttendanceController extends Controller
 
         $employees = $employeeQuery->get();
 
-        // For individual view: sort active employees first, optionally filter to present-only.
+        // Compute leave days overlap for all employees in the period
+        $onLeaveMap = $this->computeOnLeaveMap($employees->pluck('id'), $dateFrom, $dateTo);
+        $employees->each(function (Employee $emp) use ($onLeaveMap): void {
+            $emp->on_leave_days = $onLeaveMap[$emp->id] ?? 0;
+        });
+
+        // For individual view: sort active employees first, optionally filter by status.
         if ($groupBy === 'individual') {
             $employees = $employees->sortByDesc('check_ins')->values();
             if ($attendanceStatus === 'present') {
                 $employees = $employees->filter(fn (Employee $e) => $e->check_ins > 0 || $e->check_outs > 0)->values();
             } elseif ($attendanceStatus === 'absent') {
-                $employees = $employees->filter(fn (Employee $e) => $e->check_ins === 0 && $e->check_outs === 0)->values();
+                // Absent = no attendance logs AND not on approved leave
+                $employees = $employees->filter(fn (Employee $e) => $e->check_ins === 0 && $e->check_outs === 0 && $e->on_leave_days === 0)->values();
+            } elseif ($attendanceStatus === 'on_leave') {
+                $employees = $employees->filter(fn (Employee $e) => $e->on_leave_days > 0)->values();
             }
         }
 
@@ -178,6 +190,7 @@ class AttendanceController extends Controller
                 'total_logs' => $e->total_logs,
                 'tardy_count' => $e->tardy_count,
                 'early_out_count' => $e->early_out_count,
+                'on_leave_days' => $e->on_leave_days,
             ])->values(),
         };
 
@@ -213,6 +226,12 @@ class AttendanceController extends Controller
             ->whereIn('employee_id', $hoEmployeeIds)
             ->distinct('employee_id')
             ->count('employee_id');
+        $todayOnLeave = LeaveApplication::where('status', 'approved')
+            ->whereIn('employee_id', $hoEmployeeIds)
+            ->where('start_date', '<=', Carbon::today()->toDateString())
+            ->where('end_date', '>=', Carbon::today()->toDateString())
+            ->distinct('employee_id')
+            ->count('employee_id');
         $todayTardy = $this->computeTodayTardyCount($data['allShifts']);
 
         // Filter options for dropdowns
@@ -227,7 +246,8 @@ class AttendanceController extends Controller
             'summary' => [
                 'total_employees' => $totalEmployees,
                 'today_present' => $todayPresent,
-                'today_absent' => max(0, $totalEmployees - $todayPresent),
+                'today_on_leave' => $todayOnLeave,
+                'today_absent' => max(0, $totalEmployees - $todayPresent - $todayOnLeave),
                 'today_tardy' => $todayTardy,
             ],
             'filters' => [
@@ -278,6 +298,7 @@ class AttendanceController extends Controller
                     'Check Outs',
                     'Late In',
                     'Early Out',
+                    'On Leave Days',
                     'Period',
                 ]);
 
@@ -294,6 +315,7 @@ class AttendanceController extends Controller
                         $row['check_outs'],
                         $row['tardy_count'],
                         $row['early_out_count'],
+                        $row['on_leave_days'] ?? 0,
                         "{$dateFrom} to {$dateTo}",
                     ]);
                 }
@@ -324,6 +346,36 @@ class AttendanceController extends Controller
 
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * Compute the number of approved leave days each employee has within [dateFrom, dateTo].
+     *
+     * @param  Collection<int, int>  $employeeIds
+     * @return array<int, int> keyed by employee_id
+     */
+    private function computeOnLeaveMap(Collection $employeeIds, string $dateFrom, string $dateTo): array
+    {
+        if ($employeeIds->isEmpty()) {
+            return [];
+        }
+
+        $leaves = LeaveApplication::where('status', 'approved')
+            ->whereIn('employee_id', $employeeIds)
+            ->where('start_date', '<=', $dateTo)
+            ->where('end_date', '>=', $dateFrom)
+            ->get(['employee_id', 'start_date', 'end_date']);
+
+        $map = [];
+        foreach ($leaves as $leave) {
+            $start = Carbon::parse(max($leave->start_date->toDateString(), $dateFrom));
+            $end = Carbon::parse(min($leave->end_date->toDateString(), $dateTo));
+            if ($end->gte($start)) {
+                $map[$leave->employee_id] = ($map[$leave->employee_id] ?? 0) + $start->diffInDays($end) + 1;
+            }
+        }
+
+        return $map;
     }
 
     /**
@@ -475,5 +527,70 @@ class AttendanceController extends Controller
             })
             ->sortBy('group')
             ->values();
+    }
+
+    /**
+     * Manual clock-in / clock-out for super admin via the web application.
+     * Toggles based on the last attendance log today: if last was check-in, records check-out, and vice versa.
+     */
+    public function manualClock(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user->isSuperAdmin() || ! $user->employee_id) {
+            abort(403, 'Your account must be linked to an employee to use manual clock-in.');
+        }
+
+        $employee = Employee::findOrFail($user->employee_id);
+
+        $lastLog = AttendanceLog::where('employee_id', $employee->id)
+            ->whereDate('timestamp', Carbon::today())
+            ->orderByDesc('timestamp')
+            ->first();
+
+        // Toggle: if the last action today was a check-in (0), do a check-out (1), otherwise check-in (0)
+        $state = ($lastLog && $lastLog->state === 0) ? 1 : 0;
+
+        AttendanceLog::create([
+            'uid' => $employee->uid,
+            'employee_id' => $employee->id,
+            'device_id' => null,
+            'timestamp' => Carbon::now(),
+            'state' => $state,
+            'type' => 255, // Web manual clock
+        ]);
+
+        $label = $state === 0 ? 'Clocked in' : 'Clocked out';
+
+        return back()->with('success', "{$label} successfully at ".Carbon::now()->format('H:i:s').'.');
+    }
+
+    /**
+     * Return today's clock status for the authenticated super admin.
+     *
+     * @return array{clock_in: string|null, clock_out: string|null, is_clocked_in: bool}|null
+     */
+    private function getMyClockStatus(): ?array
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->isSuperAdmin() || ! $user->employee_id) {
+            return null;
+        }
+
+        $todayLogs = AttendanceLog::where('employee_id', $user->employee_id)
+            ->whereDate('timestamp', Carbon::today())
+            ->orderBy('timestamp')
+            ->get();
+
+        $clockIn = $todayLogs->firstWhere('state', 0);
+        $lastLog = $todayLogs->last();
+        $isClockedIn = $lastLog && $lastLog->state === 0;
+
+        return [
+            'clock_in' => $clockIn?->timestamp?->format('H:i:s'),
+            'clock_out' => $isClockedIn ? null : ($todayLogs->lastWhere('state', 1)?->timestamp?->format('H:i:s')),
+            'is_clocked_in' => $isClockedIn,
+        ];
     }
 }

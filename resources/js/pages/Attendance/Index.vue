@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Search, ClipboardList, BarChart2 } from 'lucide-vue-next';
+import { Search, ClipboardList, BarChart2, LogIn, LogOut, Clock } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { debounce } from '@/lib/debounce';
 
@@ -37,6 +37,12 @@ interface PaginatedSessions {
     links: Array<{ url: string | null; label: string; active: boolean }>;
 }
 
+interface MyClockStatus {
+    clock_in: string | null;
+    clock_out: string | null;
+    is_clocked_in: boolean;
+}
+
 const props = defineProps<{
     sessions: PaginatedSessions;
     filters: {
@@ -46,7 +52,14 @@ const props = defineProps<{
         department?: string;
     };
     departments: string[];
+    myClockStatus: MyClockStatus | null;
 }>();
+
+const clockForm = useForm({});
+
+function submitClock() {
+    clockForm.post(route('attendance.manual-clock'));
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -122,6 +135,41 @@ function sessionStatus(s: Session): 'in' | 'out' | 'partial' {
                     </Link>
                 </Button>
             </div>
+
+            <!-- Manual Clock-In/Out (super admin only) -->
+            <Card v-if="myClockStatus !== null" class="border-primary/20 bg-primary/5">
+                <CardContent class="flex items-center justify-between gap-4 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                            <Clock class="size-5 text-primary" />
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold">My Attendance Today</p>
+                            <p class="text-xs text-muted-foreground">
+                                <span v-if="myClockStatus.clock_in">
+                                    In: {{ myClockStatus.clock_in }}
+                                    <span v-if="myClockStatus.clock_out"> &nbsp;·&nbsp; Out: {{ myClockStatus.clock_out }}</span>
+                                </span>
+                                <span v-else>Not clocked in yet</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Badge :variant="myClockStatus.is_clocked_in ? 'default' : 'secondary'" class="hidden sm:flex">
+                            {{ myClockStatus.is_clocked_in ? 'Clocked In' : 'Clocked Out' }}
+                        </Badge>
+                        <Button
+                            :variant="myClockStatus.is_clocked_in ? 'outline' : 'default'"
+                            :disabled="clockForm.processing"
+                            @click="submitClock"
+                        >
+                            <LogOut v-if="myClockStatus.is_clocked_in" class="mr-2 size-4" />
+                            <LogIn v-else class="mr-2 size-4" />
+                            {{ myClockStatus.is_clocked_in ? 'Clock Out' : 'Clock In' }}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <!-- Filters -->
             <div class="flex flex-wrap gap-3">

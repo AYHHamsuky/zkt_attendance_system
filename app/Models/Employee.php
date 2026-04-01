@@ -46,6 +46,8 @@ class Employee extends Model
         'region',
         'location',
         'photo_path',
+        'archived_at',
+        'archive_reason',
     ];
 
     protected function casts(): array
@@ -55,7 +57,13 @@ class Employee extends Model
             'card_number' => 'integer',
             'has_fingerprint' => 'boolean',
             'is_active' => 'boolean',
+            'archived_at' => 'datetime',
         ];
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
     }
 
     public function device(): BelongsTo

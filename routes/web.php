@@ -31,10 +31,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('employees/{employee}/send-to-enrollment', [EmployeeController::class, 'sendToEnrollment'])->name('employees.send-to-enrollment');
     Route::post('employees/{employee}/mark-enrolled', [EmployeeController::class, 'markEnrolled'])->name('employees.mark-enrolled');
 
+    // Archive / unarchive — admin and super admin only
+    Route::middleware('admin')->group(function () {
+        Route::post('employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
+        Route::post('employees/{employee}/unarchive', [EmployeeController::class, 'unarchive'])->name('employees.unarchive');
+    });
+
     // Attendance
     Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::get('attendance/export', [AttendanceController::class, 'export'])->name('attendance.export');
     Route::get('attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+
+    // Manual clock-in / clock-out — super admin only
+    Route::middleware('super_admin')->group(function () {
+        Route::post('attendance/manual-clock', [AttendanceController::class, 'manualClock'])->name('attendance.manual-clock');
+    });
 });
 
 require __DIR__.'/settings.php';

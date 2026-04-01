@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,11 +8,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import InputError from '@/components/InputError.vue';
-import { ArrowLeft, Pencil, Fingerprint, CreditCard, Send, CheckCircle } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ArrowLeft, Pencil, Fingerprint, CreditCard, Send, CheckCircle, Archive, ArchiveRestore } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 interface AttendanceLog {
     id: number;
@@ -47,6 +56,8 @@ interface Employee {
     card_number: number;
     has_fingerprint: boolean;
     is_active: boolean;
+    archived_at: string | null;
+    archive_reason: string | null;
     shift_id: number | null;
     shift: Shift | null;
     device: { id: number; name: string } | null;
@@ -68,6 +79,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
     { title: props.employee.name },
 ];
+
+const page = usePage();
+const isAdmin = computed(() => {
+    const role = (page.props.auth as { user: { role: string } }).user?.role;
+    return role === 'admin' || role === 'super_admin';
+});
+
+const archiveDialogOpen = ref(false);
+const archiveForm = useForm({ reason: '' });
+
+function archiveEmployee(): void {
+    archiveForm.post(`/employees/${props.employee.id}/archive`, {
+        onSuccess: () => { archiveDialogOpen.value = false; },
+    });
+}
+
+function unarchiveEmployee(): void {
+    router.post(`/employees/${props.employee.id}/unarchive`);
+}
 
 const editing = ref(false);
 const selectedEnrollmentDevice = ref('');
@@ -143,6 +173,31 @@ function formatTime(timestamp: string): string {
                 <Badge :variant="employee.is_active ? 'default' : 'secondary'" class="text-sm">
                     {{ employee.is_active ? 'Active' : 'Inactive' }}
                 </Badge>
+                <Badge v-if="employee.archived_at" variant="outline" class="text-sm border-amber-400 text-amber-600">
+                    Archived
+                </Badge>
+                <template v-if="isAdmin">
+                    <Button
+                        v-if="!employee.archived_at"
+                        variant="outline"
+                        size="sm"
+                        class="border-amber-400 text-amber-600 hover:bg-amber-50"
+                        @click="archiveDialogOpen = true"
+                    >
+                        <Archive class="mr-1 size-4" />
+                        Archive
+                    </Button>
+                    <Button
+                        v-else
+                        variant="outline"
+                        size="sm"
+                        class="border-green-500 text-green-600 hover:bg-green-50"
+                        @click="unarchiveEmployee"
+                    >
+                        <ArchiveRestore class="mr-1 size-4" />
+                        Reinstate
+                    </Button>
+                </template>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">
@@ -370,5 +425,41 @@ function formatTime(timestamp: string): string {
                 </Card>
             </div>
         </div>
+
+        <!-- Archive Dialog -->
+        <Dialog v-model:open="archiveDialogOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <Archive class="size-5 text-amber-600" />
+                        Archive Employee
+                    </DialogTitle>
+                    <DialogDescription>
+                        "{{ employee.name }}" will be marked as archived and removed from active lists.
+                        Their records are preserved and can be reinstated at any time.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-2 py-2">
+                    <Label for="archive-reason">Reason (optional)</Label>
+                    <Textarea
+                        id="archive-reason"
+                        v-model="archiveForm.reason"
+                        placeholder="e.g. Resigned, Contract ended, Retired..."
+                        rows="3"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" @click="archiveDialogOpen = false">Cancel</Button>
+                    <Button
+                        class="bg-amber-600 hover:bg-amber-700 text-white"
+                        :disabled="archiveForm.processing"
+                        @click="archiveEmployee"
+                    >
+                        <Archive class="mr-2 size-4" />
+                        Archive Employee
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

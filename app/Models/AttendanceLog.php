@@ -63,6 +63,7 @@ class AttendanceLog extends Model
             1 => 'Fingerprint',
             4 => 'Card',
             15 => 'Face',
+            255 => 'Web',
             default => 'Other',
         };
     }
