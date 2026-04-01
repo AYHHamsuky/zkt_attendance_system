@@ -49,25 +49,29 @@ interface PaginatedData {
 const props = defineProps<{
     applications: PaginatedData;
     leaveTypes: LeaveType[];
-    filters: { search?: string; status?: string; leave_type_id?: string };
+    filters: { search?: string; status?: string; leave_type_id?: string; date_from?: string; date_to?: string };
     canManage: boolean;
     isAdmin: boolean;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Leave Applications' },
 ];
 
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const leaveTypeId = ref(props.filters.leave_type_id ?? '');
+const dateFrom = ref(props.filters.date_from ?? '');
+const dateTo = ref(props.filters.date_to ?? '');
 
 const applyFilters = debounce(() => {
     router.get('/hr/leave', {
         search: search.value || undefined,
         status: status.value || undefined,
         leave_type_id: leaveTypeId.value || undefined,
+        date_from: dateFrom.value || undefined,
+        date_to: dateTo.value || undefined,
     }, { preserveState: true, replace: true });
 }, 300);
 
@@ -175,8 +179,10 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
             <div v-if="canManage" class="flex flex-wrap gap-3" data-tour="leave-filters">
                 <div class="relative min-w-[200px] flex-1 max-w-sm">
                     <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input v-model="search" placeholder="Search employee..." class="pl-9" />
+                    <Input v-model="search" placeholder="Search employee..." class="pl-9" @input="applyFilters" />
                 </div>
+                <Input v-model="dateFrom" type="date" class="w-[150px]" title="From date" @change="applyFilters" />
+                <Input v-model="dateTo" type="date" class="w-[150px]" title="To date" @change="applyFilters" />
                 <Select :model-value="status || 'all'" @update:model-value="onChange('status', $event)">
                     <SelectTrigger class="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
                     <SelectContent>

@@ -31,7 +31,7 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Performance' },
 ];
 

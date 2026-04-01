@@ -48,6 +48,14 @@ class LeaveController extends Controller
             if ($request->filled('leave_type_id')) {
                 $query->where('leave_type_id', $request->input('leave_type_id'));
             }
+
+            if ($request->filled('date_from')) {
+                $query->where('start_date', '>=', $request->input('date_from'));
+            }
+
+            if ($request->filled('date_to')) {
+                $query->where('end_date', '<=', $request->input('date_to'));
+            }
         }
 
         $paginator = $query->paginate(20)->withQueryString();
@@ -69,7 +77,7 @@ class LeaveController extends Controller
         return Inertia::render('HR/Leave/Index', [
             'applications' => $applications,
             'leaveTypes' => $leaveTypes,
-            'filters' => $request->only(['search', 'status', 'leave_type_id']),
+            'filters' => $request->only(['search', 'status', 'leave_type_id', 'date_from', 'date_to']),
             'canManage' => $canManage,
             'isAdmin' => $user->isAdmin(),
         ]);
@@ -84,10 +92,13 @@ class LeaveController extends Controller
 
         $leaveTypes = LeaveType::select(
             'id', 'name', 'days_allowed_per_year', 'is_paid',
-            'gender_restriction', 'requires_reliever', 'requires_document', 'document_label'
+            'gender_restriction', 'requires_reliever', 'requires_document', 'document_label',
+            'is_annual_leave', 'requires_annual_exhausted'
         )->get();
 
         $balances = [];
+        $annualLeaveRemaining = 0;
+
         if ($user->employee) {
             $year = now()->year;
             $balances = LeaveBalance::where('employee_id', $user->employee->id)
@@ -101,12 +112,25 @@ class LeaveController extends Controller
                     'remaining' => $b->days_allowed - $b->days_taken - $b->days_pending,
                 ])
                 ->toArray();
+
+            // Sum remaining days across all annual leave types for eligibility check
+            $annualLeaveTypeIds = $leaveTypes->where('is_annual_leave', true)->pluck('id');
+            foreach ($annualLeaveTypeIds as $typeId) {
+                if (isset($balances[$typeId])) {
+                    $annualLeaveRemaining += max(0, $balances[$typeId]['remaining']);
+                } else {
+                    // No balance record yet means full allowance still available
+                    $annualType = $leaveTypes->firstWhere('id', $typeId);
+                    $annualLeaveRemaining += $annualType?->days_allowed_per_year ?? 0;
+                }
+            }
         }
 
         return Inertia::render('HR/Leave/Create', [
             'myEmployee' => $myEmployee,
             'leaveTypes' => $leaveTypes,
             'balances' => $balances,
+            'annualLeaveRemaining' => $annualLeaveRemaining,
         ]);
     }
 
@@ -180,6 +204,31 @@ class LeaveController extends Controller
         $weekdays = $this->countWeekdays($startDate, $endDate);
         $holidays = PublicHoliday::between($startDate, $endDate);
         $daysRequested = max(1, $weekdays - $holidays->count());
+
+        // Enforce annual leave exhaustion rule for restricted leave types
+        if ($leaveType?->requires_annual_exhausted) {
+            $year = $startDate->year;
+            $annualTypeIds = LeaveType::where('is_annual_leave', true)->pluck('id');
+            $annualRemaining = 0;
+            foreach ($annualTypeIds as $typeId) {
+                $annualBalance = LeaveBalance::where('employee_id', $validated['employee_id'])
+                    ->where('leave_type_id', $typeId)
+                    ->where('year', $year)
+                    ->first();
+                if ($annualBalance) {
+                    $annualRemaining += max(0, $annualBalance->days_allowed - $annualBalance->days_taken - $annualBalance->days_pending);
+                } else {
+                    $annualType = LeaveType::find($typeId);
+                    $annualRemaining += $annualType?->days_allowed_per_year ?? 0;
+                }
+            }
+
+            if ($annualRemaining > 0) {
+                return back()->withErrors([
+                    'leave_type_id' => "You must fully exhaust your Annual Leave entitlement before applying for {$leaveType->name}. You still have {$annualRemaining} Annual Leave day(s) remaining.",
+                ])->withInput();
+            }
+        }
 
         // Enforce leave balance limit
         $balance = LeaveBalance::firstOrCreate(

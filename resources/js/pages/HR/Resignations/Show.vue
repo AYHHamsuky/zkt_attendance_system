@@ -25,7 +25,7 @@ interface Resignation {
 const props = defineProps<{ resignation: Resignation }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Resignations', href: '/hr/resignations' },
     { title: props.resignation.employee.name },
 ];

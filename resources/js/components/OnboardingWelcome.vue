@@ -12,19 +12,26 @@ const { isFirstLogin, welcomeShown, markWelcomeShown, markStepCompleted, markCom
 const visible = ref(false);
 const role = (page.props.auth?.user?.role as string) ?? 'user';
 
+// Session-level guard: prevents re-showing if the user dismissed it this session,
+// even if the async API call hasn't persisted to the DB yet when the next page loads.
+const SESSION_KEY = 'onboarding_welcome_dismissed';
+
 onMounted(() => {
+    if (sessionStorage.getItem(SESSION_KEY) === 'true') return;
     if (isFirstLogin.value || !welcomeShown.value) {
         visible.value = true;
     }
 });
 
 async function onSkip(): Promise<void> {
+    sessionStorage.setItem(SESSION_KEY, 'true');
     visible.value = false;
     await markWelcomeShown();
     await markCompleted();
 }
 
 async function onStartTour(): Promise<void> {
+    sessionStorage.setItem(SESSION_KEY, 'true');
     visible.value = false;
     await markWelcomeShown();
     runMainTour();

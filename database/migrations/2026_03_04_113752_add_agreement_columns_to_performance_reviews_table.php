@@ -11,17 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('performance_reviews', function (Blueprint $table) {
-            $table->timestamp('employee_agreed_at')->nullable()->after('notify_sent_at');
-            $table->timestamp('manager_agreed_at')->nullable()->after('employee_agreed_at');
-            $table->timestamp('planning_locked_at')->nullable()->after('manager_agreed_at');
-        });
+        // Columns now created in initial migration, this is kept for migration history
     }
 
     public function down(): void
     {
-        Schema::table('performance_reviews', function (Blueprint $table) {
-            $table->dropColumn(['employee_agreed_at', 'manager_agreed_at', 'planning_locked_at']);
-        });
+        // No changes to revert
     }
 };

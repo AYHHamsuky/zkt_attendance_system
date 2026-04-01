@@ -18,6 +18,8 @@ class LeaveType extends Model
         'document_label',
         'description',
         'hr_email',
+        'is_annual_leave',
+        'requires_annual_exhausted',
     ];
 
     protected function casts(): array
@@ -27,6 +29,8 @@ class LeaveType extends Model
             'requires_approval' => 'boolean',
             'requires_reliever' => 'boolean',
             'requires_document' => 'boolean',
+            'is_annual_leave' => 'boolean',
+            'requires_annual_exhausted' => 'boolean',
             'days_allowed_per_year' => 'integer',
         ];
     }

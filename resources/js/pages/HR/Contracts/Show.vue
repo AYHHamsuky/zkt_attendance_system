@@ -25,7 +25,7 @@ interface Contract {
 const props = defineProps<{ contract: Contract }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Contracts', href: '/hr/contracts' },
     { title: props.contract.employee.name },
 ];

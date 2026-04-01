@@ -51,14 +51,14 @@ function can(permission: string): boolean {
 
 // ── Human Resources module — flat items ───────────────────────────────────
 const hrItems = computed<NavItem[]>(() => [
-    can('hr.dashboard')    && { title: 'HR Dashboard', href: dashboard(),        icon: Briefcase },
-    can('hr.nominal_roll') && { title: 'Staff List', href: '/hr/nominal-roll', icon: Users },
-    can('hr.contracts')    && { title: 'Contracts',    href: '/hr/contracts',     icon: FileText },
-    can('hr.leave.apply')     && { title: 'Leave',           href: '/hr/leave',          icon: Calendar },
-    can('hr.public_holidays') && { title: 'Public Holidays', href: '/hr/public-holidays', icon: Umbrella },
-    can('hr.documents')       && { title: 'Documents',       href: '/hr/documents',       icon: FolderOpen },
-    can('hr.transfers')    && { title: 'Transfers',    href: '/hr/transfers',     icon: ArrowLeftRight },
-    can('hr.resignations') && { title: 'Resignations', href: '/hr/resignations',  icon: DoorOpen },
+    can('hr.dashboard')       && { title: 'HR Dashboard',    href: dashboard(),              icon: Briefcase,     dataTour: 'nav-hr-dashboard' },
+    can('hr.nominal_roll')    && { title: 'Staff List',      href: '/hr/nominal-roll',       icon: Users,         dataTour: 'nav-hr-nominal-roll' },
+    can('hr.contracts')       && { title: 'Contracts',       href: '/hr/contracts',          icon: FileText,      dataTour: 'nav-hr-contracts' },
+    can('hr.leave.apply')     && { title: 'Leave',           href: '/hr/leave',              icon: Calendar,      dataTour: 'nav-hr-leave' },
+    can('hr.public_holidays') && { title: 'Public Holidays', href: '/hr/public-holidays',    icon: Umbrella,      dataTour: 'nav-hr-holidays' },
+    can('hr.documents')       && { title: 'Documents',       href: '/hr/documents',          icon: FolderOpen,    dataTour: 'nav-hr-documents' },
+    can('hr.transfers')       && { title: 'Transfers',       href: '/hr/transfers',          icon: ArrowLeftRight, dataTour: 'nav-hr-transfers' },
+    can('hr.resignations')    && { title: 'Resignations',    href: '/hr/resignations',       icon: DoorOpen,      dataTour: 'nav-hr-resignations' },
 ].filter(Boolean) as NavItem[]);
 
 // ── Human Resources — Attendance collapsible sub-group ────────────────────

@@ -33,7 +33,7 @@ interface LeaveApplication {
 const props = defineProps<{ application: LeaveApplication; hasDocument: boolean }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Leave', href: '/hr/leave' },
     { title: props.application.employee?.name ?? '—' },
 ];
@@ -142,7 +142,7 @@ function hrStageStatus(): 'done' | 'rejected' | 'active' | 'waiting' {
                         </div>
                         <div class="flex justify-between">
                             <span class="text-muted-foreground">Leave Type</span>
-                            <span>{{ application.leaveType?.name }} ({{ application.leaveType?.is_paid ? 'Paid' : 'Unpaid' }})</span>
+                            <span>{{ application.leaveType?.name }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-muted-foreground">Duration</span>

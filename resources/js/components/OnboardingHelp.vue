@@ -152,7 +152,7 @@ const tourIcons: Record<TourId, string> = {
                     <div class="my-1 border-t border-zinc-100 dark:border-zinc-800"></div>
 
                     <p class="px-4 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        HR Management
+                        HRIS
                     </p>
 
                     <button

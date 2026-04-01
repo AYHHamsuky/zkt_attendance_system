@@ -31,7 +31,7 @@ defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Leave', href: '/hr/leave' },
     { title: 'Public Holidays' },
 ];

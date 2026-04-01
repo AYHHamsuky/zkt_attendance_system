@@ -24,6 +24,8 @@ interface LeaveType {
     requires_reliever: boolean;
     requires_document: boolean;
     document_label: string | null;
+    is_annual_leave: boolean;
+    requires_annual_exhausted: boolean;
 }
 interface MyEmployee { id: number; name: string; department: string | null }
 interface DayPreview { weekdays: number; holidays: { name: string; date: string }[]; working_days: number }
@@ -33,10 +35,11 @@ const props = defineProps<{
     myEmployee: MyEmployee | null;
     leaveTypes: LeaveType[];
     balances: Record<string, BalanceInfo>;
+    annualLeaveRemaining: number;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Leave', href: '/hr/leave' },
     { title: 'New Application' },
 ];
@@ -52,6 +55,11 @@ const form = useForm({
 });
 
 const documentFile = ref<File | null>(null);
+
+// Leave types that require annual leave exhaustion are hidden while annual leave days remain
+const availableLeaveTypes = computed<LeaveType[]>(() =>
+    props.leaveTypes.filter(lt => !lt.requires_annual_exhausted || props.annualLeaveRemaining <= 0)
+);
 
 const selectedLeaveType = computed<LeaveType | null>(
     () => props.leaveTypes.find(lt => String(lt.id) === form.leave_type_id) ?? null
@@ -135,8 +143,8 @@ function submit() {
                             <Select :model-value="form.leave_type_id || ''" @update:model-value="v => form.leave_type_id = String(v)">
                                 <SelectTrigger><SelectValue placeholder="Select leave type" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem v-for="lt in leaveTypes" :key="lt.id" :value="String(lt.id)">
-                                        {{ lt.name }} ({{ lt.days_allowed_per_year }}d/yr · {{ lt.is_paid ? 'Paid' : 'Unpaid' }})
+                                    <SelectItem v-for="lt in availableLeaveTypes" :key="lt.id" :value="String(lt.id)">
+                                        {{ lt.name }} ({{ lt.days_allowed_per_year }}d/yr)
                                     </SelectItem>
                                 </SelectContent>
                             </Select>

@@ -1,6 +1,6 @@
 <x-mail::message>
 @if ($approved)
-# KPI Plan Approved ✓
+# KPI Approved ✓
 
 Dear **{{ $recipientName }}**,
 
@@ -40,7 +40,7 @@ If the button above does not work, copy and paste this link into your browser:
 
 ---
 
-*This is an automated notification from the HR Management System. Please do not reply to this email.*
+*This is an automated notification from the Kaduna Electric HRIS. Please do not reply to this email.*
 
 Thanks,
 HR Department

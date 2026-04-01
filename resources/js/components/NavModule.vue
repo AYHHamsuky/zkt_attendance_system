@@ -83,6 +83,7 @@ const subGroupOpen = ref<Record<string, boolean>>(
                     <SidebarGroupLabel
                         class="flex cursor-pointer select-none items-center justify-between
                                hover:text-sidebar-foreground"
+                        data-tour-module-toggle
                     >
                         {{ label }}
                         <ChevronRight
@@ -101,7 +102,7 @@ const subGroupOpen = ref<Record<string, boolean>>(
                                 :is-active="isCurrentUrl(item.href)"
                                 :tooltip="item.title"
                             >
-                                <Link :href="item.href">
+                                <Link :href="item.href" :data-tour="item.dataTour">
                                     <component :is="item.icon" />
                                     <span>{{ item.title }}</span>
                                 </Link>
@@ -163,7 +164,7 @@ const subGroupOpen = ref<Record<string, boolean>>(
                         :is-active="isCurrentUrl(item.href)"
                         :tooltip="item.title"
                     >
-                        <Link :href="item.href">
+                        <Link :href="item.href" :data-tour="item.dataTour">
                             <component :is="item.icon" />
                             <span>{{ item.title }}</span>
                         </Link>

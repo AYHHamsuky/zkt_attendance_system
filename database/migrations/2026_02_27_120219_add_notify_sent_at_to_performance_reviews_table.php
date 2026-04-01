@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('performance_reviews', function (Blueprint $table) {
-            $table->timestamp('notify_sent_at')->nullable()->after('reviewed_at');
-        });
+        // Column now created in initial migration, this is kept for migration history
     }
 
     public function down(): void

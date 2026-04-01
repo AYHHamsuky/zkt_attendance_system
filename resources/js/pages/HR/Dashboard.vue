@@ -90,7 +90,7 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'Human Resources', href: '/hr' },
 ];
 
 // Admin module cards — only computed when in admin view
@@ -139,7 +139,7 @@ const appraisalStatusLabel: Record<string, string> = {
 
                 <!-- Header -->
                 <div>
-                    <h2 class="text-2xl font-bold tracking-tight">HR Management</h2>
+                    <h2 class="text-2xl font-bold tracking-tight">HRIS</h2>
                     <p class="text-muted-foreground">{{ stats.total_employees }} active employees across all modules</p>
                 </div>
 

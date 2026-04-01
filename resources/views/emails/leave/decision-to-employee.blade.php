@@ -30,7 +30,7 @@ View Application
 </x-mail::button>
 
 ---
-*This is an automated notification from the HR Management System. Please do not reply to this email.*
+*This is an automated notification from the Kaduna Electric HRIS. Please do not reply to this email.*
 
 Thanks,
 HR Department

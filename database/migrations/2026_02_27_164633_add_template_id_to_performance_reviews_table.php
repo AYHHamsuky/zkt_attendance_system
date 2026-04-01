@@ -9,8 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('performance_reviews', function (Blueprint $table) {
-            $table->foreignId('template_id')->nullable()->after('reviewer_id')
-                ->constrained('performance_templates')->nullOnDelete();
+            $table->foreign('template_id')
+                ->references('id')
+                ->on('performance_templates')
+                ->cascadeOnDelete();
         });
     }
 
@@ -18,7 +20,6 @@ return new class extends Migration
     {
         Schema::table('performance_reviews', function (Blueprint $table) {
             $table->dropForeignIdFor(\App\Models\PerformanceTemplate::class, 'template_id');
-            $table->dropColumn('template_id');
         });
     }
 };

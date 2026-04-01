@@ -86,7 +86,7 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Performance', href: '/hr/performance/cycles' },
     { title: props.review.cycle.name, href: `/hr/performance/cycles/${props.review.cycle.id}` },
     { title: props.review.employee.name },
@@ -232,7 +232,7 @@ function deleteTrackingEntry(entryId: number) {
 }
 
 function trackingStatusLabel(status: string) {
-    const map: Record<string, string> = { on_track: 'On Track', off_track: 'Off Track', not_started: 'Not Started', not_required: 'Not Required' };
+    const map: Record<string, string> = { on_track: 'On Track', off_track: 'Off Track', not_started: 'Not Started', not_required: 'No More Required' };
     return map[status] ?? status;
 }
 
@@ -743,7 +743,7 @@ function planObjIndex(id: number): number {
                                         <option value="on_track">On Track</option>
                                         <option value="off_track">Off Track</option>
                                         <option value="not_started">Not Started</option>
-                                        <option value="not_required">Not Required</option>
+                                        <option value="not_required">No More Required</option>
                                     </select>
                                 </div>
                                 <div>
@@ -812,7 +812,6 @@ function planObjIndex(id: number): number {
                                         <th class="border px-3 py-2 text-left min-w-40">KPI</th>
                                         <th class="border px-3 py-2 text-center w-16">Wt%</th>
                                         <th class="border px-3 py-2 text-left min-w-32">Target</th>
-                                        <th class="border px-3 py-2 text-left min-w-32">Yearly Achieved</th>
                                         <th class="border px-3 py-2 text-center w-28">Self Assessment</th>
                                         <th v-if="canManageReview" class="border px-3 py-2 text-center w-28">LM Assessment</th>
                                         <th v-if="canViewScores" class="border px-3 py-2 text-center w-20">Score</th>
@@ -826,17 +825,6 @@ function planObjIndex(id: number): number {
                                         <td class="border px-3 py-2 text-xs text-gray-500">{{ obj.kpi ?? '—' }}</td>
                                         <td class="border px-3 py-2 text-center text-sm font-medium">{{ obj.weight }}%</td>
                                         <td class="border px-3 py-2 text-sm">{{ obj.target ?? '—' }}</td>
-
-                                        <!-- Yearly Achieved — editable by employee in rating phase -->
-                                        <td class="border px-2 py-1" data-tour="perf-yearly-achieved">
-                                            <template v-if="isEmployee && review.status === 'rating' && ratingObjIndex(obj.id) >= 0">
-                                                <input type="text"
-                                                    v-model="ratingForm.objectives[ratingObjIndex(obj.id)].yearly_achieved"
-                                                    class="w-full text-sm border rounded p-1 focus:ring-1 focus:ring-purple-300"
-                                                    placeholder="e.g. 95%" />
-                                            </template>
-                                            <span v-else class="text-sm">{{ obj.yearly_achieved ?? '—' }}</span>
-                                        </td>
 
                                         <!-- Self Rating — editable by employee in rating phase -->
                                         <td class="border px-2 py-1 text-center" data-tour="perf-self-rating">

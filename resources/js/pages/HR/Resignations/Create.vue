@@ -14,7 +14,7 @@ interface Employee { id: number; name: string; department: string | null; positi
 defineProps<{ employees: Employee[] }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Resignations', href: '/hr/resignations' },
     { title: 'Record Resignation' },
 ];

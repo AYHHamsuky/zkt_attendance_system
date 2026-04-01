@@ -35,7 +35,7 @@ defineProps<{
 
                 <!-- Headline -->
                 <h1 class="text-center text-3xl font-bold leading-tight text-white">
-                    Attendance &<br />HR Management
+                    Attendance &<br />Human Resources Information System
                 </h1>
                 <p class="mt-4 text-center text-sm leading-relaxed text-green-300">
                     Manage your workforce, track attendance,<br />and drive performance — all in one place.

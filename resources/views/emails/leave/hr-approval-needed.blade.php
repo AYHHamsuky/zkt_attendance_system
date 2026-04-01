@@ -28,8 +28,8 @@ If the button does not work, copy and paste this link:
 {{ $approvalUrl }}
 
 ---
-*This is an automated notification from the HR Management System.*
+*This is an automated notification from the Kaduna Electric HRIS.*
 
 Thanks,
-HR Management System
+Kaduna Electric HRIS
 </x-mail::message>

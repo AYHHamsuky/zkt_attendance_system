@@ -45,7 +45,7 @@ const mainTour: RoleTour = {
             popover: {
                 title: 'Navigation Sidebar',
                 description:
-                    'The sidebar on the left is your main navigation menu. Click any item to go to that module. Use the <strong>arrow icon</strong> at the top to collapse it and give yourself more screen space.',
+                    'The sidebar on the left is your main navigation menu. Click any item to navigate to the desired module. Use the <strong>arrow icon</strong> at the top to collapse it and give yourself more screen space.',
                 side: 'right',
                 align: 'start',
             },
@@ -63,11 +63,80 @@ const mainTour: RoleTour = {
         {
             element: '[data-tour="nav-hr"]',
             popover: {
-                title: 'Human Resources Module',
+                title: 'HRIS Module',
                 description:
-                    'The <strong>Human Resources</strong> section contains all the HR tools you need: Leave Applications, Performance Appraisals, Nominal Roll, Contracts, Documents, Transfers, and Resignations. Click the label to expand or collapse this section.',
+                    'The <strong>HRIS</strong> section contains all the HR tools you need. Click the label to expand or collapse this section and see the individual modules inside.',
                 side: 'right',
                 align: 'start',
+            },
+            onHighlighted: () => {
+                // Ensure the HRIS collapsible is open so subsequent steps can find the nav items
+                const leaveItem = document.querySelector('[data-tour="nav-hr-leave"]');
+                const isVisible = leaveItem && leaveItem.getBoundingClientRect().height > 0;
+                if (!isVisible) {
+                    const toggle = document.querySelector<HTMLElement>('[data-tour="nav-hr"] [data-tour-module-toggle]');
+                    toggle?.click();
+                }
+            },
+        },
+        {
+            element: '[data-tour="nav-hr-leave"]',
+            popover: {
+                title: 'Leave',
+                description:
+                    'Apply for leave, track your leave balance, and (for HR/managers) approve or reject employee leave requests. The system follows a two-stage approval workflow: Line Manager → HR.',
+                side: 'right',
+                align: 'center',
+            },
+        },
+        {
+            element: '[data-tour="nav-hr-nominal-roll"]',
+            popover: {
+                title: 'Staff List',
+                description:
+                    'Browse the complete staff directory for Kaduna Electric. View each employee\'s HR profile, line manager, department, and employment history.',
+                side: 'right',
+                align: 'center',
+            },
+        },
+        {
+            element: '[data-tour="nav-hr-contracts"]',
+            popover: {
+                title: 'Contracts',
+                description:
+                    'View and manage employment contracts. Contracts approaching expiry are flagged on the HR Dashboard so renewals are never missed.',
+                side: 'right',
+                align: 'center',
+            },
+        },
+        {
+            element: '[data-tour="nav-hr-documents"]',
+            popover: {
+                title: 'Documents',
+                description:
+                    'Store and retrieve official HR documents — appointment letters, certificates, disciplinary notices, and more — securely linked to each employee.',
+                side: 'right',
+                align: 'center',
+            },
+        },
+        {
+            element: '[data-tour="nav-hr-transfers"]',
+            popover: {
+                title: 'Transfers',
+                description:
+                    'Record and process staff transfers between departments, units, or locations. Completing a transfer automatically updates the employee\'s profile.',
+                side: 'right',
+                align: 'center',
+            },
+        },
+        {
+            element: '[data-tour="nav-hr-resignations"]',
+            popover: {
+                title: 'Resignations',
+                description:
+                    'Manage employee resignations and exit checklists. When all checklist items are marked complete and the resignation is accepted, the employee\'s account is automatically deactivated.',
+                side: 'right',
+                align: 'center',
             },
         },
         {
@@ -75,7 +144,7 @@ const mainTour: RoleTour = {
             popover: {
                 title: '? Help & Tutorials',
                 description:
-                    'This <strong>?</strong> button is always available in the top-right corner of every page. Click it to restart this tour, or jump directly into a specific module tutorial at any time.',
+                    'This <strong>?</strong> button is always available in the top-right corner of every page. Click it to restart this tour or jump directly into a module tutorial at any time.',
                 side: 'bottom',
                 align: 'end',
             },
@@ -96,7 +165,7 @@ const mainTour: RoleTour = {
 const leaveOverviewTour: RoleTour = {
     id: 'leave_overview',
     label: 'Leave — Overview',
-    description: 'Learn how to read your leave history and check balances.',
+    description: 'Learn how to read your leave history, check balances, and understand leave statuses.',
     roles: [],
     path: '/hr/leave',
     steps: [
@@ -104,15 +173,15 @@ const leaveOverviewTour: RoleTour = {
             popover: {
                 title: '📅 Leave Applications',
                 description:
-                    'This page shows all leave requests — yours, and (if you\'re HR or a manager) those submitted by other employees. Let\'s walk through the key elements.',
+                    'This page is your leave hub. You can see all your submitted leave requests, their current approval status, and how many days remain in your entitlement. Let\'s walk through everything on this page.',
             },
         },
         {
             element: '[data-tour="leave-page-header"]',
             popover: {
-                title: 'Page Title & Count',
+                title: 'Page Title & Total Count',
                 description:
-                    'The heading shows whose leave applications are listed. The number below tells you the total count matching your current filters.',
+                    'The heading shows whose leave applications are listed. If you are a regular employee, you see only your own. HR staff and managers see all employees\' applications. The number below is the total count currently matching your filters.',
                 side: 'bottom',
                 align: 'start',
             },
@@ -120,9 +189,9 @@ const leaveOverviewTour: RoleTour = {
         {
             element: '[data-tour="leave-new-btn"]',
             popover: {
-                title: '➕ New Application Button',
+                title: '➕ New Application',
                 description:
-                    'Click <strong>New Application</strong> to submit a leave request. You will select the leave type, set your start and end dates, choose a reliever if required, and optionally upload a supporting document.',
+                    'Click <strong>New Application</strong> to apply for leave. You\'ll fill in the leave type, dates, reliever, and optionally upload a supporting document. The next tutorial (Leave — How to Apply) walks through that form in detail.',
                 side: 'bottom',
                 align: 'end',
             },
@@ -132,7 +201,7 @@ const leaveOverviewTour: RoleTour = {
             popover: {
                 title: 'Applications Table',
                 description:
-                    'Each row shows an application: the employee name, leave type, date range, number of days requested, and the current status. Click the <strong>eye icon</strong> on any row to view full details including the approval trail.',
+                    'Each row is a leave application. You can see the employee name, leave type, date range (<strong>Start → End</strong>), number of working days requested, and the current status badge. Click the <strong>eye icon</strong> on any row to see the full detail view including the approval trail and any rejection reasons.',
                 side: 'top',
                 align: 'start',
             },
@@ -140,21 +209,46 @@ const leaveOverviewTour: RoleTour = {
         {
             element: '[data-tour="leave-status-help"]',
             popover: {
-                title: 'Understanding Leave Statuses',
+                title: '🏷️ What Do the Status Labels Mean?',
                 description:
-                    '<strong>Pending LM</strong> — awaiting your line manager\'s approval.<br>'
-                    + '<strong>Pending HR</strong> — approved by LM, now awaiting final HR sign-off.<br>'
-                    + '<strong>Approved</strong> — fully approved, leave will be deducted from your balance.<br>'
-                    + '<strong>Rejected</strong> — declined, with a reason provided.<br>'
-                    + '<strong>Cancelled</strong> — withdrawn by the employee.',
+                    '<strong>Pending LM</strong> — Submitted and awaiting your Line Manager\'s approval.<br>'
+                    + '<strong>Pending HR</strong> — Line Manager approved it; now awaiting final HR sign-off.<br>'
+                    + '<strong>Approved</strong> — Fully approved by both LM and HR. The days are deducted from your balance.<br>'
+                    + '<strong>LM Rejected</strong> — Your Line Manager declined the request.<br>'
+                    + '<strong>Rejected</strong> — HR declined the request after LM approval.<br>'
+                    + '<strong>Cancelled</strong> — Withdrawn by the employee before approval.',
                 side: 'top',
             },
         },
         {
             popover: {
-                title: '💡 Tip: Check Your Balance First',
+                title: '🔄 The Two-Stage Approval Workflow',
                 description:
-                    'Before applying, it\'s a good idea to check how many days you have remaining. Your leave balances are shown when you click <strong>New Application</strong> and select a leave type. The system automatically prevents applications that exceed your entitlement.',
+                    'Every leave request goes through two stages:<br><br>'
+                    + '<strong>Stage 1 — Line Manager:</strong> Your direct manager reviews and approves or rejects your request. You receive an email notification of their decision.<br><br>'
+                    + '<strong>Stage 2 — HR Final Approval:</strong> After LM approval, HR gives the final sign-off. You receive another email when this is done.<br><br>'
+                    + 'You are notified by email at every step of the process.',
+            },
+        },
+        {
+            popover: {
+                title: '📊 Leave Types & Eligibility Rules',
+                description:
+                    'Kaduna Electric offers several types of leave, each with its own entitlement:<br><br>'
+                    + '• <strong>Annual Leave</strong> — Your standard yearly entitlement. Must be fully used before Leave of Absence or Leave Without Pay becomes available.<br>'
+                    + '• <strong>Sick Leave</strong> — Requires a medical certificate upload.<br>'
+                    + '• <strong>Leave of Absence</strong> — Only available once Annual Leave is exhausted.<br>'
+                    + '• <strong>Leave Without Pay</strong> — Unpaid leave; only available after Annual Leave is exhausted.',
+            },
+        },
+        {
+            popover: {
+                title: '💡 Tips for Leave Applications',
+                description:
+                    '• <strong>Check your balance first</strong> — Your remaining days are shown on the application form when you select a leave type.<br>'
+                    + '• <strong>Weekends & public holidays are excluded</strong> — The system calculates only working days.<br>'
+                    + '• <strong>Apply in advance</strong> — Your line manager needs time to review and arrange cover.<br>'
+                    + '• <strong>Reliever required</strong> — You must nominate a colleague to cover your duties for most leave types.',
             },
         },
     ],
@@ -166,32 +260,37 @@ const leaveOverviewTour: RoleTour = {
 const leaveApplyTour: RoleTour = {
     id: 'leave_apply',
     label: 'Leave — How to Apply',
-    description: 'Step-by-step guide to submitting a leave request.',
+    description: 'Step-by-step guide to submitting a leave request correctly.',
     roles: [],
     path: '/hr/leave/create',
     steps: [
         {
             popover: {
-                title: '📝 Submitting a Leave Application',
+                title: '📝 Applying for Leave — Step by Step',
                 description:
-                    'This form lets you request time off. Fill in each field carefully — your line manager will receive an email notification once you submit.',
+                    'This form is how you submit a leave request. It takes about two minutes to fill in. Your line manager will receive an email notification as soon as you submit. Let\'s go through each field.',
             },
         },
         {
             element: '[data-tour="leave-form-employee"]',
             popover: {
-                title: 'Employee Field',
+                title: 'Step 1 — Your Name',
                 description:
-                    'This is pre-filled with your name. If you are HR or an admin, you can change this to apply leave on behalf of another employee.',
+                    'This field is pre-filled with your name and cannot be changed (it\'s tied to your login). If you are HR or an admin, you can click here to change it and apply leave on behalf of another employee.',
                 side: 'bottom',
             },
         },
         {
             element: '[data-tour="leave-form-type"]',
             popover: {
-                title: 'Leave Type',
+                title: 'Step 2 — Choose Your Leave Type',
                 description:
-                    'Select the type of leave you are requesting — Annual Leave, Sick Leave, Maternity Leave, Study Leave, etc. Once selected, your remaining balance for that type will appear below automatically.',
+                    'Select the type of leave you need:<br>'
+                    + '• <strong>Annual Leave</strong> — Your standard yearly entitlement<br>'
+                    + '• <strong>Sick Leave</strong> — Requires a medical certificate<br>'
+                    + '• <strong>Leave of Absence</strong> — Only if Annual Leave is exhausted<br>'
+                    + '• <strong>Leave Without Pay</strong> — Unpaid; only if Annual Leave is exhausted<br><br>'
+                    + 'Once selected, your remaining balance for that type is shown below.',
                 side: 'bottom',
             },
         },
@@ -200,54 +299,76 @@ const leaveApplyTour: RoleTour = {
             popover: {
                 title: 'Your Leave Balance',
                 description:
-                    'This card shows how many days you have <strong>allowed</strong>, how many are <strong>already taken or pending</strong>, and how many are still <strong>remaining</strong>. The form will warn you if you try to exceed your entitlement.',
+                    'This tells you exactly how many days you have left for the selected leave type. It shows:<br>'
+                    + '• <strong>Total allowed</strong> for the year (e.g. 30 days)<br>'
+                    + '• <strong>Already taken</strong> — days from approved past leave<br>'
+                    + '• <strong>Pending</strong> — days from applications still awaiting approval<br>'
+                    + '• <strong>Remaining</strong> — what you can still apply for<br><br>'
+                    + 'The system will block your submission if your request exceeds the remaining balance.',
                 side: 'bottom',
             },
         },
         {
             element: '[data-tour="leave-form-dates"]',
             popover: {
-                title: 'Start & End Dates',
+                title: 'Step 3 — Set Your Dates',
                 description:
-                    'Set your leave start and end dates. The system automatically calculates working days, excludes weekends, and deducts any public holidays that fall within your leave period.',
+                    'Select your <strong>Start Date</strong> and <strong>End Date</strong>. As soon as both are set, the system automatically:<br>'
+                    + '• Counts only weekdays (Monday–Friday)<br>'
+                    + '• Deducts any public holidays within the period<br>'
+                    + '• Shows you a blue summary of working days that will be deducted<br><br>'
+                    + 'A warning will appear if the calculated days exceed your balance.',
                 side: 'bottom',
-            },
-        },
-        {
-            element: '[data-tour="leave-form-reason"]',
-            popover: {
-                title: 'Reason for Leave',
-                description:
-                    'Provide a brief reason. This is shared with your line manager when they review your request.',
-                side: 'top',
             },
         },
         {
             element: '[data-tour="leave-form-reliever"]',
             popover: {
-                title: 'Reliever (if required)',
+                title: 'Step 4 — Nominate a Reliever',
                 description:
-                    'Some leave types (e.g. Annual Leave) require you to nominate a <strong>reliever</strong> — a colleague who will cover your duties while you are away. Search by name to select them.',
+                    'You must nominate a <strong>reliever</strong> — a colleague who will handle your responsibilities while you are away. Type their name in the search box and select them from the list. The system will automatically notify your reliever when your leave is approved.',
                 side: 'top',
             },
         },
         {
             element: '[data-tour="leave-form-document"]',
             popover: {
-                title: 'Supporting Document',
+                title: 'Step 5 — Upload Supporting Document (if required)',
                 description:
-                    'Certain leave types (e.g. Sick Leave, Maternity Leave) require you to attach a supporting document such as a medical certificate. Upload it here as a PDF or image.',
+                    'For <strong>Sick Leave</strong>, you must attach a medical certificate or doctor\'s note. The upload box only appears when the selected leave type requires it. Accepted formats: PDF, JPG, or PNG (max 5MB). Without this document, the form cannot be submitted.',
+                side: 'top',
+            },
+        },
+        {
+            element: '[data-tour="leave-form-reason"]',
+            popover: {
+                title: 'Step 6 — Reason for Leave',
+                description:
+                    'Write a brief explanation for your leave request. This is visible to your line manager and HR when they review the application. Be clear and professional — this is part of your official HR record.',
                 side: 'top',
             },
         },
         {
             element: '[data-tour="leave-form-submit"]',
             popover: {
-                title: '✅ Submit Your Application',
+                title: '✅ Step 7 — Submit Your Application',
                 description:
-                    'Once everything is filled in correctly, click <strong>Submit Application</strong>. Your line manager will receive an email and can approve or reject the request. You will be notified by email at each step of the approval process.',
+                    'Once all fields are correctly filled in, click <strong>Submit Application</strong>. The button is disabled if your request exceeds your balance — fix the dates first.<br><br>'
+                    + 'After submission:<br>'
+                    + '1. You receive a confirmation email<br>'
+                    + '2. Your Line Manager receives an email to review<br>'
+                    + '3. You are notified at each approval stage',
                 side: 'top',
                 align: 'end',
+            },
+        },
+        {
+            popover: {
+                title: '📬 What Happens After You Submit?',
+                description:
+                    'Your application status will show as <strong>Pending LM</strong> on the Leave list. You can track it there at any time.<br><br>'
+                    + 'If your manager approves it, it moves to <strong>Pending HR</strong> for final sign-off. Once HR approves, it becomes <strong>Approved</strong> and the days are deducted from your balance.<br><br>'
+                    + 'If it is rejected at any stage, you will receive an email with the reason.',
             },
         },
     ],
@@ -259,23 +380,28 @@ const leaveApplyTour: RoleTour = {
 const performanceMineTour: RoleTour = {
     id: 'performance_mine',
     label: 'Performance — My Appraisals',
-    description: 'Understand your assigned appraisal cycles and their statuses.',
+    description: 'Understand your assigned appraisal cycles, statuses, and the BSC grading system.',
     roles: [],
     path: '/hr/performance/my-appraisals',
     steps: [
         {
             popover: {
-                title: '⭐ Performance Appraisals',
+                title: '⭐ Welcome to Performance Appraisals',
                 description:
-                    'The Kaduna Electric performance system uses a <strong>Balanced Scorecard (BSC)</strong> framework. Your objectives are grouped into four categories: Financials, Customers, Internal Processes, and Learning & Growth. Let\'s walk through how appraisals work.',
+                    'The Kaduna Electric performance system uses a <strong>Balanced Scorecard (BSC)</strong> framework. Your work is measured across four categories:<br><br>'
+                    + '📊 <strong>Financials</strong> — revenue, cost, and financial targets<br>'
+                    + '👥 <strong>Customers</strong> — service quality and satisfaction<br>'
+                    + '⚙️ <strong>Internal Processes</strong> — operational efficiency<br>'
+                    + '📚 <strong>Learning & Growth</strong> — skills and development<br><br>'
+                    + 'Each category contains specific KPIs (Key Performance Indicators) assigned to your role.',
             },
         },
         {
             element: '[data-tour="perf-mine-header"]',
             popover: {
-                title: 'Your Appraisal Record',
+                title: 'Your Appraisal History',
                 description:
-                    'This page lists all appraisal cycles that HR has assigned to you. Each card represents one appraisal period (e.g. Annual 2025).',
+                    'This page lists every appraisal cycle HR has assigned to you — one card per appraisal period (e.g. Annual 2025, Annual 2024). You can track all historical appraisals here and see your progress over time.',
                 side: 'bottom',
                 align: 'start',
             },
@@ -283,41 +409,58 @@ const performanceMineTour: RoleTour = {
         {
             element: '[data-tour="perf-reviews-grid"]',
             popover: {
-                title: 'Appraisal Cards',
+                title: 'Reading an Appraisal Card',
                 description:
-                    'Each card shows the cycle name, year, and its current status. The three steps at the bottom of each card — <strong>Self → Manager → Final</strong> — show you exactly where you are in the appraisal workflow.',
+                    'Each card shows:<br>'
+                    + '• <strong>Cycle name and year</strong> — the appraisal period<br>'
+                    + '• <strong>Status badge</strong> — where you currently are in the workflow<br>'
+                    + '• <strong>Progress steps</strong> — Self → Manager → Final (checkmarks fill in as each stage completes)<br>'
+                    + '• <strong>Open Appraisal button</strong> — click to enter the appraisal form<br><br>'
+                    + 'A card showing <em>Pending</em> means it is your turn to act.',
                 side: 'top',
             },
         },
         {
             popover: {
-                title: '🔄 The Appraisal Workflow',
+                title: '🔄 The Four-Stage Appraisal Workflow',
                 description:
-                    '<strong>1. Self-Appraisal (Pending)</strong> — You complete your KPIs and rate yourself.<br>'
-                    + '<strong>2. Manager Review (Submitted)</strong> — Your line manager reviews and rates your objectives.<br>'
-                    + '<strong>3. Acknowledged</strong> — You confirm you have seen the manager\'s ratings.<br>'
-                    + '<strong>4. Finalized</strong> — HR locks the appraisal. The final score is visible.',
+                    'Every appraisal moves through four stages:<br><br>'
+                    + '<strong>1. Pending (Self-Appraisal)</strong> — HR opens the cycle and you fill in your KPI ratings and comments. This is your chance to assess yourself before your manager does.<br><br>'
+                    + '<strong>2. Submitted (Manager Review)</strong> — After you submit, your Line Manager sees your self-ratings and adds their own scoring. You cannot edit at this stage.<br><br>'
+                    + '<strong>3. Acknowledged</strong> — The manager\'s scores are shared with you. You click "Acknowledge" to confirm you have reviewed them.<br><br>'
+                    + '<strong>4. Finalized</strong> — HR locks the appraisal. Your final score and grade are recorded in your HR profile.',
             },
         },
         {
             popover: {
-                title: '📊 Understanding Your Score',
+                title: '📊 The BSC Grading System Explained',
                 description:
-                    'Scores use the BSC grading system:<br>'
-                    + '<strong>D (1)</strong> — Below expectation<br>'
-                    + '<strong>C (2)</strong> — Partially meets expectation<br>'
-                    + '<strong>B (3)</strong> — Meets expectation<br>'
-                    + '<strong>A (4)</strong> — Exceeds expectation<br>'
-                    + '<strong>A+ (5)</strong> — Outstanding<br><br>'
-                    + 'Each objective has a <em>weight</em>, and your final score is a weighted average expressed as a percentage.',
+                    'Each KPI is rated on a 1–5 scale with letter grades:<br><br>'
+                    + '<strong>E (1 — 20%)</strong> — Below expectation. Significant improvement needed.<br>'
+                    + '<strong>D (2 — 40%)</strong> — Partially meets expectation. Some areas met, others missed.<br>'
+                    + '<strong>C (3 — 60%)</strong> — Meets expectation. Solid performance against target.<br>'
+                    + '<strong>B (4 — 80%)</strong> — Exceeds expectation. Above-target delivery.<br>'
+                    + '<strong>A (5 — 100%)</strong> — Outstanding. Exceptional performance.<br><br>'
+                    + '<em>Final score = sum of (your rating × KPI weight) / (total weight × 5) × 100</em>',
+            },
+        },
+        {
+            popover: {
+                title: '⚖️ How KPI Weights Work',
+                description:
+                    'Each KPI has a <strong>weight percentage</strong> that reflects how important it is to your role. For example:<br><br>'
+                    + '• A KPI with 20% weight counts twice as much as one with 10%<br>'
+                    + '• All weights in your appraisal typically sum to 100%<br>'
+                    + '• A high score on a heavily-weighted KPI will significantly boost your final grade<br><br>'
+                    + 'You can see each KPI\'s weight in the objectives table on the appraisal form.',
             },
         },
         {
             element: '[data-tour="perf-reviews-grid"]',
             popover: {
-                title: '👆 Open Your Appraisal',
+                title: '👆 How to Start Your Self-Appraisal',
                 description:
-                    'Click <strong>Open Appraisal</strong> on any card to start filling in your self-assessment. The next tutorial will walk you through the appraisal form itself.',
+                    'Find the card with <strong>Pending</strong> status and click <strong>Open Appraisal</strong>. This takes you to the full appraisal form where you will rate each KPI and add your comments. The next tutorial — <em>Performance — Completing Your Appraisal</em> — walks through that form step by step.',
                 side: 'top',
             },
         },
@@ -330,23 +473,23 @@ const performanceMineTour: RoleTour = {
 const performanceReviewTour: RoleTour = {
     id: 'performance_review',
     label: 'Performance — Completing Your Appraisal',
-    description: 'How to rate your KPIs, add comments, and submit your self-appraisal.',
+    description: 'How to rate your KPIs, add training needs, and submit your self-appraisal.',
     roles: [],
     path: '/hr/performance/my-appraisals',
     steps: [
         {
             popover: {
-                title: '📋 Your Appraisal Form',
+                title: '📋 Inside Your Appraisal Form',
                 description:
-                    'This page contains your full appraisal. It is divided into sections matching your BSC categories. Work through each objective, rate yourself honestly, and add supporting comments before submitting.',
+                    'This form is where you do your self-assessment. It contains all the KPIs assigned to your role for this appraisal cycle, grouped by BSC category. Work through each one carefully — your ratings and comments form the basis of your annual performance record.',
             },
         },
         {
             element: '[data-tour="perf-review-header"]',
             popover: {
-                title: 'Review Header',
+                title: 'Appraisal Header',
                 description:
-                    'Shows the cycle name, your current status, and your job title at the time of review. The status badge on the right indicates whether this appraisal is still open for editing.',
+                    'The header shows the <strong>cycle name</strong> (e.g. Annual 2025), your <strong>job title</strong> at the time of this review, and the current <strong>status badge</strong>. When the status is <em>Pending</em>, you can edit the form. Once you submit, editing is locked until the process completes.',
                 side: 'bottom',
                 align: 'start',
             },
@@ -354,9 +497,15 @@ const performanceReviewTour: RoleTour = {
         {
             element: '[data-tour="perf-objectives-section"]',
             popover: {
-                title: 'Your Objectives (KPIs)',
+                title: 'Your KPI Objectives Table',
                 description:
-                    'Each row is a KPI (Key Performance Indicator) from the BSC template assigned to you. You will see the objective description, KPI measure, target, and the weight it carries towards your final score.',
+                    'Each row is one of your KPIs. The columns are:<br>'
+                    + '• <strong>BSC Category</strong> — which scorecard quadrant this falls under<br>'
+                    + '• <strong>Description</strong> — what you are expected to deliver<br>'
+                    + '• <strong>KPI</strong> — how your performance on this objective is measured<br>'
+                    + '• <strong>Target</strong> — the specific goal set for this period<br>'
+                    + '• <strong>Weight %</strong> — how much this KPI contributes to your final score<br><br>'
+                    + 'Scroll right to see the rating and progress columns.',
                 side: 'top',
                 align: 'start',
             },
@@ -364,9 +513,15 @@ const performanceReviewTour: RoleTour = {
         {
             element: '[data-tour="perf-self-rating"]',
             popover: {
-                title: 'Self-Rating — D / C / B / A / A+',
+                title: 'Rating Yourself — D / C / B / A / A+',
                 description:
-                    'For each objective, select your self-rating using the radio buttons: <strong>D, C, B, A, or A+</strong>. Be honest — your line manager will see both your rating and theirs side-by-side when they review.',
+                    'For each KPI, select your honest self-rating:<br><br>'
+                    + '• Click <strong>D</strong> — if you did not meet the target<br>'
+                    + '• Click <strong>C</strong> — if you partially met the target<br>'
+                    + '• Click <strong>B</strong> — if you fully met the target<br>'
+                    + '• Click <strong>A</strong> — if you exceeded the target<br>'
+                    + '• Click <strong>A+</strong> — if you delivered exceptional results<br><br>'
+                    + '<em>Be honest and realistic. Your manager will see your self-rating alongside theirs, and large discrepancies may prompt a discussion.</em>',
                 side: 'left',
             },
         },
@@ -375,25 +530,26 @@ const performanceReviewTour: RoleTour = {
             popover: {
                 title: 'Progress Status',
                 description:
-                    'Mark whether this objective is <strong>On Track</strong>, <strong>Off Track</strong>, or <strong>Pending</strong>. This helps your manager see where you need support.',
-                side: 'left',
-            },
-        },
-        {
-            element: '[data-tour="perf-yearly-achieved"]',
-            popover: {
-                title: 'What You Achieved',
-                description:
-                    'Use this field to document what you actually accomplished against this KPI during the year. Be specific — include numbers, dates, or outcomes where possible.',
+                    'For each KPI, also mark its progress status:<br><br>'
+                    + '• <strong>On Track</strong> — you are meeting or ahead of target<br>'
+                    + '• <strong>Off Track</strong> — you are behind target and need support<br>'
+                    + '• <strong>No More Required</strong> — this objective is no longer applicable<br><br>'
+                    + 'This helps your manager quickly identify where you may need coaching or resources.',
                 side: 'left',
             },
         },
         {
             element: '[data-tour="perf-training-needs"]',
             popover: {
-                title: 'Training Needs',
+                title: 'Training & Development Needs',
                 description:
-                    'At the bottom of the form, you can add any training or development needs you identified during the year. List the skill gap and the type of training that would help address it. Your manager and HR will review these.',
+                    'At the bottom of the form, you can add training needs you identified during the year. For each need, you specify:<br><br>'
+                    + '• <strong>Training Name</strong> — what course or skill area<br>'
+                    + '• <strong>Skill Gap</strong> — what you currently lack<br>'
+                    + '• <strong>Type</strong> — classroom, on-the-job, e-learning, mentoring, etc.<br>'
+                    + '• <strong>Priority</strong> — High / Medium / Low<br>'
+                    + '• <strong>Target Date</strong> — when you want to complete it<br><br>'
+                    + 'Click <strong>Add Training Need</strong> to add a row. Your manager and HR review these as part of your development plan.',
                 side: 'top',
                 align: 'start',
             },
@@ -401,20 +557,51 @@ const performanceReviewTour: RoleTour = {
         {
             element: '[data-tour="perf-employee-comment"]',
             popover: {
-                title: 'Overall Comment',
+                title: 'Your Overall Comment',
                 description:
-                    'Write a brief overall comment about your performance this year — achievements, challenges, and goals for the next period. This is your opportunity to provide context.',
+                    'Write a summary of your performance this year. This is your opportunity to:<br>'
+                    + '• Highlight key achievements not fully captured in the KPI table<br>'
+                    + '• Explain any circumstances that affected your performance<br>'
+                    + '• State your goals for the next appraisal period<br><br>'
+                    + 'This comment is visible to your manager and HR and is stored permanently in your HR record.',
                 side: 'top',
             },
         },
         {
             element: '[data-tour="perf-submit-btn"]',
             popover: {
-                title: '📤 Submit Your Self-Appraisal',
+                title: '📤 Saving vs Submitting',
                 description:
-                    'When you are satisfied with all your ratings and comments, click <strong>Submit for Review</strong>. This will notify your line manager to begin their assessment. <em>You will not be able to edit your responses after submission.</em>',
+                    'You have two options:<br><br>'
+                    + '• <strong>Save Draft</strong> — saves your ratings without submitting. You can come back and continue editing later. Use this if you need more time.<br><br>'
+                    + '• <strong>Submit for Review</strong> — finalises your self-appraisal and notifies your Line Manager to begin their assessment. <em>You cannot edit your ratings after submitting.</em><br><br>'
+                    + 'Make sure all KPIs are rated before you submit.',
                 side: 'top',
                 align: 'end',
+            },
+        },
+        {
+            popover: {
+                title: '📬 What Happens After You Submit?',
+                description:
+                    'After submission:<br><br>'
+                    + '1. Your appraisal status changes to <strong>Submitted</strong><br>'
+                    + '2. Your Line Manager receives an email notification<br>'
+                    + '3. The manager opens the form, sees your self-ratings in blue, and adds their own scores<br>'
+                    + '4. Once the manager submits, you receive an email — go back to the form to see the manager\'s ratings<br>'
+                    + '5. Click <strong>Acknowledge</strong> to confirm you have reviewed the manager\'s scores<br>'
+                    + '6. HR finalises the appraisal and your grade is recorded',
+            },
+        },
+        {
+            popover: {
+                title: '✅ Tips for a Strong Appraisal',
+                description:
+                    '• <strong>Use numbers</strong> — "Reduced downtime by 15%" is stronger than "Improved performance"<br>'
+                    + '• <strong>Rate all KPIs</strong> — don\'t leave any blank before submitting<br>'
+                    + '• <strong>Be timely</strong> — HR sets deadlines; late self-appraisals delay the whole cycle<br>'
+                    + '• <strong>Add real training needs</strong> — they feed directly into your Personal Development Plan<br>'
+                    + '• <strong>Save often</strong> — use Save Draft regularly to avoid losing your work',
             },
         },
     ],

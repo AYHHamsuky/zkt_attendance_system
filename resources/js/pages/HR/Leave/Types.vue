@@ -34,7 +34,7 @@ interface LeaveType {
 const props = defineProps<{ leaveTypes: LeaveType[] }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'HR Management', href: '/hr' },
+    { title: 'HRIS', href: '/hr' },
     { title: 'Leave', href: '/hr/leave' },
     { title: 'Leave Types' },
 ];
@@ -114,7 +114,6 @@ function deleteType(lt: LeaveType) {
                             <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Days/Year</TableHead>
-                                <TableHead>Paid</TableHead>
                                 <TableHead>Gender</TableHead>
                                 <TableHead>Approval</TableHead>
                                 <TableHead>Applications</TableHead>
@@ -125,7 +124,6 @@ function deleteType(lt: LeaveType) {
                             <TableRow v-for="lt in leaveTypes" :key="lt.id">
                                 <TableCell class="font-medium">{{ lt.name }}</TableCell>
                                 <TableCell>{{ lt.days_allowed_per_year }}</TableCell>
-                                <TableCell><Badge :variant="lt.is_paid ? 'default' : 'secondary'">{{ lt.is_paid ? 'Paid' : 'Unpaid' }}</Badge></TableCell>
                                 <TableCell class="capitalize">{{ lt.gender_restriction ?? 'All' }}</TableCell>
                                 <TableCell>{{ lt.requires_approval ? 'Required' : 'Auto' }}</TableCell>
                                 <TableCell>{{ lt.applications_count }}</TableCell>
@@ -174,10 +172,6 @@ function deleteType(lt: LeaveType) {
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-x-6 gap-y-2">
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" v-model="form.is_paid" class="size-4" />
-                            Paid Leave
-                        </label>
                         <label class="flex items-center gap-2 text-sm">
                             <input type="checkbox" v-model="form.requires_approval" class="size-4" />
                             Requires Approval
